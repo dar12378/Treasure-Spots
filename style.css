@@ -42,7 +42,8 @@ body {
 .nav-btn,
 .back-btn,
 .save-btn,
-.remove-btn {
+.remove-btn,
+.view-map-btn {
   border: none;
   cursor: pointer;
   transition: 0.2s ease;
@@ -112,6 +113,14 @@ body {
   flex-wrap: wrap;
 }
 
+#map {
+  width: 100%;
+  height: 450px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
 .back-btn {
   background: #1d4ed8;
   color: white;
@@ -169,6 +178,12 @@ body {
   margin-bottom: 16px;
 }
 
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .save-btn {
   background: #facc15;
   color: #111827;
@@ -193,6 +208,19 @@ body {
 
 .remove-btn:hover {
   background: #dc2626;
+}
+
+.view-map-btn {
+  background: #0ea5e9;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.view-map-btn:hover {
+  background: #0284c7;
 }
 
 .empty-message {
@@ -232,5 +260,9 @@ body {
   .section-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  #map {
+    height: 320px;
   }
 }
