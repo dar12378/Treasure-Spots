@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treasure Spots</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="overlay">
+      <nav class="navbar">
+        <h1 class="logo">Treasure Spots</h1>
+        <button id="showFavoritesBtn" class="nav-btn">Favorites</button>
+      </nav>
+
+      <div class="hero-content">
+        <h2>Discover hidden gems in your city</h2>
+        <p>Find beautiful, quiet, and unique places worth exploring.</p>
+        <a href="#spotsSection" class="explore-btn">Explore Spots</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="spotsSection" class="section">
+      <h2 class="section-title">Featured Treasure Spots</h2>
+      <div id="spotsContainer" class="spots-grid"></div>
+    </section>
+
+    <section id="favoritesSection" class="section hidden">
+      <div class="section-header">
+        <h2 class="section-title">Your Favorite Spots</h2>
+        <button id="backToSpotsBtn" class="back-btn">Back to All Spots</button>
+      </div>
+      <div id="favoritesContainer" class="spots-grid"></div>
+      <p id="emptyFavoritesMessage" class="empty-message">
+        You have no favorite spots yet.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Treasure Spots. Explore your city differently.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
