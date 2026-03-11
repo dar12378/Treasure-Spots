@@ -3,29 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Treasure Spots</title>
-
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <title>Treasure Spots Globe</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>Discover hidden gems around the world.</p>
-      </div>
-
-      <div class="card">
-        <h2>Search</h2>
-        <input
-          type="text"
-          id="searchInput"
-          placeholder="Search place name..."
-        />
+        <p>Explore hidden gems on a 3D globe.</p>
       </div>
 
       <div class="card">
@@ -45,20 +32,6 @@
       </div>
 
       <div class="card">
-        <h2>Route</h2>
-
-        <label for="travelModeSelect">Travel Mode</label>
-        <select id="travelModeSelect">
-          <option value="DRIVING">Driving</option>
-          <option value="WALKING">Walking</option>
-        </select>
-
-        <button id="useMyLocationBtn" class="primary-btn">Use My Location</button>
-        <p id="locationStatus" class="status-text">Location not selected yet.</p>
-        <p id="routeInfo" class="status-text">No route yet.</p>
-      </div>
-
-      <div class="card">
         <div class="places-header">
           <h2>Places</h2>
           <span id="resultsCount">0</span>
@@ -66,17 +39,16 @@
 
         <div id="placesList" class="places-list"></div>
         <p id="emptyPlacesMessage" class="empty-message">
-          Choose country and city to see places.
+          Choose country and city to show places.
         </p>
       </div>
     </aside>
 
-    <main class="map-area">
-      <div id="map"></div>
+    <main class="globe-area">
+      <div id="globeViz"></div>
     </main>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
