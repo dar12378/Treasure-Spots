@@ -5,88 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Treasure Spots</title>
   <link rel="stylesheet" href="style.css" />
-
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
 </head>
 <body>
-  <header class="hero">
-    <div class="overlay">
-      <nav class="navbar">
-        <h1 class="logo">Treasure Spots</h1>
-        <button id="showFavoritesBtn" class="nav-btn">Favorites</button>
-      </nav>
-
-      <div class="hero-content">
-        <h2>Discover hidden gems in your city</h2>
-        <p>Find beautiful, quiet, and unique places worth exploring.</p>
-        <a href="#mapSection" class="explore-btn">Explore Spots</a>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <h1>Treasure Spots</h1>
+        <p>Discover hidden gems like Google Maps, but curated.</p>
       </div>
-    </div>
-  </header>
 
-  <main>
-    <section id="filtersSection" class="section">
-      <h2 class="section-title">Choose Location</h2>
+      <div class="filters-card">
+        <h2>Choose Location</h2>
 
-      <div class="filters-bar">
-        <div class="filter-group">
-          <label for="countrySelect">Country</label>
-          <select id="countrySelect">
-            <option value="">Select country</option>
-          </select>
+        <label for="countrySelect">Country</label>
+        <select id="countrySelect">
+          <option value="">Select country</option>
+        </select>
+
+        <label for="citySelect">City</label>
+        <select id="citySelect" disabled>
+          <option value="">Select city</option>
+        </select>
+
+        <button id="resetFiltersBtn" class="secondary-btn">Reset filters</button>
+      </div>
+
+      <div class="route-card">
+        <h2>Route</h2>
+        <label for="travelModeSelect">Travel mode</label>
+        <select id="travelModeSelect">
+          <option value="DRIVING">Driving</option>
+          <option value="WALKING">Walking</option>
+        </select>
+
+        <button id="useMyLocationBtn" class="primary-btn">Use my location</button>
+        <p id="locationStatus" class="status-text">No origin selected yet.</p>
+      </div>
+
+      <div class="places-list-card">
+        <div class="places-header">
+          <h2>Places</h2>
+          <span id="resultsCount">0</span>
         </div>
 
-        <div class="filter-group">
-          <label for="citySelect">City</label>
-          <select id="citySelect" disabled>
-            <option value="">Select city</option>
-          </select>
-        </div>
+        <div id="placesList" class="places-list"></div>
+        <p id="emptyPlacesMessage" class="empty-message">
+          Choose a country and city to show treasure spots.
+        </p>
+      </div>
 
-        <div class="filter-group button-group">
-          <button id="resetFiltersBtn" class="reset-btn">Reset</button>
+      <div class="directions-card">
+        <h2>Directions</h2>
+        <div id="directionsPanel" class="directions-panel">
+          Select a place and get route directions here.
         </div>
       </div>
-    </section>
+    </aside>
 
-    <section id="mapSection" class="section">
-      <h2 class="section-title">Explore on the Map</h2>
+    <main class="map-area">
+      <div class="top-search-bar">
+        <div id="searchBoxHost" class="search-host"></div>
+      </div>
+
       <div id="map"></div>
-    </section>
+    </main>
+  </div>
 
-    <section id="spotsSection" class="section">
-      <h2 class="section-title">Treasure Spots</h2>
-      <div id="spotsContainer" class="spots-grid"></div>
-      <p id="noResultsMessage" class="empty-message hidden">
-        No treasure spots found for this location.
-      </p>
-    </section>
-
-    <section id="favoritesSection" class="section hidden">
-      <div class="section-header">
-        <h2 class="section-title">Your Favorite Spots</h2>
-        <button id="backToSpotsBtn" class="back-btn">Back to All Spots</button>
-      </div>
-
-      <div id="favoritesContainer" class="spots-grid"></div>
-      <p id="emptyFavoritesMessage" class="empty-message">
-        You have no favorite spots yet.
-      </p>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <p>© 2026 Treasure Spots. Explore your city differently.</p>
-  </footer>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
-  ></script>
   <script src="script.js"></script>
+  <script
+    async
+    defer
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&v=weekly&loading=async&libraries=places,marker&callback=initApp"
+  ></script>
 </body>
 </html>
