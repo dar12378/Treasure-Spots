@@ -81,99 +81,55 @@ const spots = [
   }
 ];
 
-const countryToCode = {
-  Israel: "il",
-  France: "fr",
-  Netherlands: "nl"
-};
-
-let map;
-let infoWindow;
-let directionsService;
-let directionsRenderer;
-let AdvancedMarkerElement;
-let PlaceAutocompleteElement;
-
-let markers = [];
-let currentLocationMarker = null;
-let searchedPlaceMarker = null;
-let activeOrigin = null;
-
-let selectedCountry = "";
-let selectedCity = "";
-
 const countrySelect = document.getElementById("countrySelect");
 const citySelect = document.getElementById("citySelect");
+const searchInput = document.getElementById("searchInput");
 const resetFiltersBtn = document.getElementById("resetFiltersBtn");
 const useMyLocationBtn = document.getElementById("useMyLocationBtn");
 const travelModeSelect = document.getElementById("travelModeSelect");
-const locationStatus = document.getElementById("locationStatus");
+
 const placesList = document.getElementById("placesList");
 const emptyPlacesMessage = document.getElementById("emptyPlacesMessage");
 const resultsCount = document.getElementById("resultsCount");
-const directionsPanel = document.getElementById("directionsPanel");
-const searchBoxHost = document.getElementById("searchBoxHost");
+const locationStatus = document.getElementById("locationStatus");
+const routeInfo = document.getElementById("routeInfo");
 
-window.initApp = async function initApp() {
-  const { Map, InfoWindow } = await google.maps.importLibrary("maps");
-  ({ AdvancedMarkerElement } = await google.maps.importLibrary("marker"));
-  ({ PlaceAutocompleteElement } = await google.maps.importLibrary("places"));
+let selectedCountry = "";
+let selectedCity = "";
+let searchTerm = "";
 
-  map = new Map(document.getElementById("map"), {
-    center: { lat: 31.7683, lng: 35.2137 },
-    zoom: 6,
-    mapId: "DEMO_MAP_ID",
-    disableDefaultUI: false,
-    zoomControl: true,
-    streetViewControl: false,
-    fullscreenControl: true
+let map;
+let markers = [];
+let userMarker = null;
+let routeLine = null;
+let activeUserLocation = null;
+
+function initMap() {
+  map = L.map("map").setView([20, 0], 2);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+}
+
+function createPinIcon() {
+  return L.divIcon({
+    className: "",
+    html: '<div class="custom-pin"></div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 26],
+    popupAnchor: [0, -24]
   });
+}
 
-  infoWindow = new InfoWindow();
-
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({
-    map,
-    panel: directionsPanel,
-    suppressMarkers: false
+function createUserIcon() {
+  return L.divIcon({
+    className: "",
+    html: '<div class="user-pin"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
   });
-
-  populateCountries();
-  initSearchBar();
-  bindEvents();
-  renderPlacesList();
-};
-
-function bindEvents() {
-  countrySelect.addEventListener("change", () => {
-    selectedCountry = countrySelect.value;
-    selectedCity = "";
-    citySelect.value = "";
-    populateCities(selectedCountry);
-    updateAutocompleteRegion();
-    clearDirections();
-    renderEverything();
-  });
-
-  citySelect.addEventListener("change", () => {
-    selectedCity = citySelect.value;
-    clearDirections();
-    renderEverything();
-  });
-
-  resetFiltersBtn.addEventListener("click", () => {
-    selectedCountry = "";
-    selectedCity = "";
-    countrySelect.value = "";
-    citySelect.innerHTML = '<option value="">Select city</option>';
-    citySelect.disabled = true;
-    clearDirections();
-    renderEverything();
-    map.setCenter({ lat: 31.7683, lng: 35.2137 });
-    map.setZoom(3);
-  });
-
-  useMyLocationBtn.addEventListener("click", useMyLocation);
 }
 
 function populateCountries() {
@@ -211,149 +167,19 @@ function populateCities(country) {
   citySelect.disabled = false;
 }
 
-function initSearchBar() {
-  const wrapper = document.createElement("div");
-  wrapper.className = "search-card";
-
-  const placeAutocomplete = new PlaceAutocompleteElement({});
-  placeAutocomplete.id = "globalPlaceSearch";
-  placeAutocomplete.setAttribute("placeholder", "Search a place like Google Maps...");
-
-  wrapper.appendChild(placeAutocomplete);
-  searchBoxHost.appendChild(wrapper);
-
-  updateAutocompleteRegion();
-
-  placeAutocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
-    try {
-      const place = placePrediction.toPlace();
-      await place.fetchFields({
-        fields: ["displayName", "formattedAddress", "location", "viewport"]
-      });
-
-      if (!place.location) return;
-
-      if (searchedPlaceMarker) {
-        searchedPlaceMarker.map = null;
-      }
-
-      searchedPlaceMarker = createMarker(
-        { lat: place.location.lat(), lng: place.location.lng() },
-        "search",
-        place.displayName || "Searched place"
-      );
-
-      activeOrigin = {
-        lat: place.location.lat(),
-        lng: place.location.lng(),
-        label: place.displayName || "Searched place"
-      };
-
-      locationStatus.textContent = `Origin: ${activeOrigin.label}`;
-
-      if (place.viewport) {
-        map.fitBounds(place.viewport);
-      } else {
-        map.setCenter(place.location);
-        map.setZoom(15);
-      }
-
-      infoWindow.setContent(`
-        <div>
-          <h3>${escapeHtml(place.displayName || "Selected place")}</h3>
-          <p>${escapeHtml(place.formattedAddress || "")}</p>
-        </div>
-      `);
-      infoWindow.open({
-        map,
-        anchor: searchedPlaceMarker
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Could not load place details.");
-    }
-  });
-}
-
-function updateAutocompleteRegion() {
-  const el = document.getElementById("globalPlaceSearch");
-  if (!el) return;
-
-  if (selectedCountry && countryToCode[selectedCountry]) {
-    el.setAttribute("included-region-codes", countryToCode[selectedCountry]);
-  } else {
-    el.removeAttribute("included-region-codes");
-  }
-}
-
 function getFilteredSpots() {
   return spots.filter((spot) => {
-    const countryOk = selectedCountry ? spot.country === selectedCountry : false;
-    const cityOk = selectedCity ? spot.city === selectedCity : false;
-    return countryOk && cityOk;
-  });
-}
+    const countryMatch = selectedCountry ? spot.country === selectedCountry : true;
+    const cityMatch = selectedCity ? spot.city === selectedCity : true;
+    const text = `${spot.name} ${spot.city} ${spot.country} ${spot.description}`.toLowerCase();
+    const searchMatch = searchTerm ? text.includes(searchTerm.toLowerCase()) : true;
 
-function renderEverything() {
-  renderPlacesList();
-  renderMarkers();
-}
-
-function renderPlacesList() {
-  const filtered = getFilteredSpots();
-  placesList.innerHTML = "";
-  resultsCount.textContent = filtered.length;
-
-  if (!selectedCountry || !selectedCity) {
-    emptyPlacesMessage.textContent = "Choose a country and city to show treasure spots.";
-    emptyPlacesMessage.style.display = "block";
-    return;
-  }
-
-  if (!filtered.length) {
-    emptyPlacesMessage.textContent = "No spots found for this city.";
-    emptyPlacesMessage.style.display = "block";
-    return;
-  }
-
-  emptyPlacesMessage.style.display = "none";
-
-  filtered.forEach((spot) => {
-    const item = document.createElement("div");
-    item.className = "place-item";
-    item.innerHTML = `
-      <img src="${spot.image}" alt="${escapeHtml(spot.name)}" />
-      <div class="place-item-content">
-        <h3>${escapeHtml(spot.name)}</h3>
-        <div class="place-meta">${escapeHtml(spot.city)}, ${escapeHtml(spot.country)}</div>
-        <div class="place-desc">${escapeHtml(spot.description)}</div>
-        <div class="place-actions">
-          <button class="focus-btn" data-id="${spot.id}">Show on map</button>
-          <button class="route-btn" data-id="${spot.id}">Get route</button>
-        </div>
-      </div>
-    `;
-
-    placesList.appendChild(item);
-  });
-
-  placesList.querySelectorAll(".focus-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      focusSpot(Number(btn.dataset.id));
-    });
-  });
-
-  placesList.querySelectorAll(".route-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      buildRouteToSpot(Number(btn.dataset.id));
-    });
+    return countryMatch && cityMatch && searchMatch;
   });
 }
 
 function clearMarkers() {
-  markers.forEach((marker) => {
-    marker.map = null;
-  });
+  markers.forEach((marker) => map.removeLayer(marker));
   markers = [];
 }
 
@@ -364,80 +190,103 @@ function renderMarkers() {
     return;
   }
 
-  const filtered = getFilteredSpots();
+  const filteredSpots = getFilteredSpots();
 
-  filtered.forEach((spot) => {
-    const marker = createMarker(
-      { lat: spot.lat, lng: spot.lng },
-      "spot",
-      spot.name
-    );
+  filteredSpots.forEach((spot) => {
+    const marker = L.marker([spot.lat, spot.lng], {
+      icon: createPinIcon()
+    }).addTo(map);
 
-    marker.__spotId = spot.id;
-    marker.addListener("click", () => {
-      openSpotCard(marker, spot);
-    });
+    marker.bindPopup(`
+      <div style="min-width: 200px;">
+        <h3>${escapeHtml(spot.name)}</h3>
+        <p><strong>${escapeHtml(spot.city)}, ${escapeHtml(spot.country)}</strong></p>
+        <p>${escapeHtml(spot.description)}</p>
+      </div>
+    `);
 
+    marker.spotId = spot.id;
     markers.push(marker);
   });
 
-  fitMapToSpots(filtered);
+  fitMapToSpots(filteredSpots);
 }
 
-function fitMapToSpots(filtered) {
-  if (!filtered.length) return;
-
-  const bounds = new google.maps.LatLngBounds();
-  filtered.forEach((spot) => bounds.extend({ lat: spot.lat, lng: spot.lng }));
-  map.fitBounds(bounds);
-
-  if (filtered.length === 1) {
-    map.setZoom(15);
+function fitMapToSpots(filteredSpots) {
+  if (!filteredSpots.length) {
+    return;
   }
+
+  if (filteredSpots.length === 1) {
+    map.setView([filteredSpots[0].lat, filteredSpots[0].lng], 14);
+    return;
+  }
+
+  const bounds = L.latLngBounds(filteredSpots.map((spot) => [spot.lat, spot.lng]));
+  map.fitBounds(bounds, { padding: [40, 40] });
 }
 
-function createMarker(position, type, title) {
-  const pin = document.createElement("div");
-  pin.className = `pin-wrapper ${type === "user" ? "pin-user" : ""} ${type === "search" ? "pin-search" : ""}`;
-  pin.innerHTML = `
-    <div class="pin-shape"></div>
-    <div class="pin-inner"></div>
-  `;
+function renderPlacesList() {
+  const filteredSpots = getFilteredSpots();
+  placesList.innerHTML = "";
+  resultsCount.textContent = filteredSpots.length;
 
-  return new AdvancedMarkerElement({
-    map,
-    position,
-    title,
-    content: pin
+  if (!selectedCountry || !selectedCity) {
+    emptyPlacesMessage.textContent = "Choose country and city to see places.";
+    emptyPlacesMessage.style.display = "block";
+    return;
+  }
+
+  if (!filteredSpots.length) {
+    emptyPlacesMessage.textContent = "No places found.";
+    emptyPlacesMessage.style.display = "block";
+    return;
+  }
+
+  emptyPlacesMessage.style.display = "none";
+
+  filteredSpots.forEach((spot) => {
+    const card = document.createElement("div");
+    card.className = "place-item";
+
+    card.innerHTML = `
+      <img src="${spot.image}" alt="${escapeHtml(spot.name)}">
+      <div class="place-item-content">
+        <h3>${escapeHtml(spot.name)}</h3>
+        <div class="place-meta">${escapeHtml(spot.city)}, ${escapeHtml(spot.country)}</div>
+        <div class="place-desc">${escapeHtml(spot.description)}</div>
+        <div class="place-actions">
+          <button class="focus-btn" data-id="${spot.id}">Show on Map</button>
+          <button class="route-btn" data-id="${spot.id}">Route</button>
+        </div>
+      </div>
+    `;
+
+    placesList.appendChild(card);
+  });
+
+  document.querySelectorAll(".focus-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      focusSpotOnMap(Number(button.dataset.id));
+    });
+  });
+
+  document.querySelectorAll(".route-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      drawRouteToSpot(Number(button.dataset.id));
+    });
   });
 }
 
-function openSpotCard(marker, spot) {
-  infoWindow.setContent(`
-    <div style="max-width:240px;">
-      <h3>${escapeHtml(spot.name)}</h3>
-      <p><strong>${escapeHtml(spot.city)}, ${escapeHtml(spot.country)}</strong></p>
-      <p>${escapeHtml(spot.description)}</p>
-      <p style="margin-top:8px; color:#1a73e8; font-weight:bold;">Click "Get route" in the side panel for navigation.</p>
-    </div>
-  `);
+function focusSpotOnMap(spotId) {
+  const selectedSpot = spots.find((spot) => spot.id === spotId);
+  if (!selectedSpot) return;
 
-  infoWindow.open({
-    map,
-    anchor: marker
-  });
-}
+  map.setView([selectedSpot.lat, selectedSpot.lng], 15);
 
-function focusSpot(spotId) {
-  const spot = spots.find((item) => item.id === spotId);
-  if (!spot) return;
-
-  map.panTo({ lat: spot.lat, lng: spot.lng });
-  map.setZoom(16);
-
-  const marker = markers.find((m) => m.__spotId === spotId);
+  const marker = markers.find((m) => m.spotId === spotId);
   if (marker) {
-    openSpotCard(marker, spot);
+    marker.openPopup();
   }
 }
 
@@ -449,42 +298,26 @@ function useMyLocation() {
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      const coords = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
 
-      activeOrigin = {
-        ...coords,
-        label: "My location"
-      };
+      activeUserLocation = { lat, lng };
 
-      locationStatus.textContent = "Origin: My location";
-
-      if (currentLocationMarker) {
-        currentLocationMarker.map = null;
+      if (userMarker) {
+        map.removeLayer(userMarker);
       }
 
-      currentLocationMarker = createMarker(coords, "user", "My location");
+      userMarker = L.marker([lat, lng], {
+        icon: createUserIcon()
+      }).addTo(map);
 
-      map.panTo(coords);
-      map.setZoom(14);
+      userMarker.bindPopup("<strong>Your location</strong>").openPopup();
 
-      infoWindow.setContent(`
-        <div>
-          <h3>My location</h3>
-          <p>Your current location is now set as route origin.</p>
-        </div>
-      `);
-
-      infoWindow.open({
-        map,
-        anchor: currentLocationMarker
-      });
+      map.setView([lat, lng], 13);
+      locationStatus.textContent = `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     },
-    (error) => {
-      console.error(error);
-      alert("Location permission denied or unavailable.");
+    () => {
+      alert("Could not get your location.");
     },
     {
       enableHighAccuracy: true,
@@ -494,40 +327,76 @@ function useMyLocation() {
   );
 }
 
-function buildRouteToSpot(spotId) {
-  const spot = spots.find((item) => item.id === spotId);
-  if (!spot) return;
+function drawRouteToSpot(spotId) {
+  const selectedSpot = spots.find((spot) => spot.id === spotId);
 
-  if (!activeOrigin) {
-    alert("First click 'Use my location' or search a place in the top search bar.");
+  if (!selectedSpot) return;
+
+  if (!activeUserLocation) {
+    alert("First click 'Use My Location'.");
     return;
   }
 
-  clearDirections();
+  if (routeLine) {
+    map.removeLayer(routeLine);
+  }
 
-  directionsService.route(
-    {
-      origin: { lat: activeOrigin.lat, lng: activeOrigin.lng },
-      destination: { lat: spot.lat, lng: spot.lng },
-      travelMode: google.maps.TravelMode[travelModeSelect.value]
-    },
-    (result, status) => {
-      if (status === "OK") {
-        directionsRenderer.setDirections(result);
-      } else {
-        alert("Could not calculate route: " + status);
-      }
-    }
+  const from = [activeUserLocation.lat, activeUserLocation.lng];
+  const to = [selectedSpot.lat, selectedSpot.lng];
+
+  routeLine = L.polyline([from, to], {
+    color: "#2563eb",
+    weight: 4,
+    opacity: 0.85,
+    dashArray: "10, 8"
+  }).addTo(map);
+
+  const bounds = L.latLngBounds([from, to]);
+  map.fitBounds(bounds, { padding: [50, 50] });
+
+  const distanceKm = calculateDistanceKm(
+    activeUserLocation.lat,
+    activeUserLocation.lng,
+    selectedSpot.lat,
+    selectedSpot.lng
   );
+
+  const travelMode = travelModeSelect.value;
+  const speedKmH = travelMode === "WALKING" ? 5 : 40;
+  const durationHours = distanceKm / speedKmH;
+  const durationMinutes = Math.round(durationHours * 60);
+
+  routeInfo.textContent =
+    `Route to ${selectedSpot.name}: ${distanceKm.toFixed(1)} km • approx. ${durationMinutes} min by ${travelMode.toLowerCase()}.`;
 }
 
-function clearDirections() {
-  directionsRenderer.set("directions", null);
-  directionsPanel.innerHTML = "Select a place and get route directions here.";
+function calculateDistanceKm(lat1, lng1, lat2, lng2) {
+  const earthRadiusKm = 6371;
+  const dLat = degreesToRadians(lat2 - lat1);
+  const dLng = degreesToRadians(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(degreesToRadians(lat1)) *
+      Math.cos(degreesToRadians(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (char) => {
+function degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+function renderAll() {
+  renderPlacesList();
+  renderMarkers();
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (char) => {
     const map = {
       "&": "&amp;",
       "<": "&lt;",
@@ -538,3 +407,51 @@ function escapeHtml(str) {
     return map[char];
   });
 }
+
+countrySelect.addEventListener("change", (event) => {
+  selectedCountry = event.target.value;
+  selectedCity = "";
+  citySelect.value = "";
+  populateCities(selectedCountry);
+  renderAll();
+});
+
+citySelect.addEventListener("change", (event) => {
+  selectedCity = event.target.value;
+  renderAll();
+});
+
+searchInput.addEventListener("input", (event) => {
+  searchTerm = event.target.value.trim();
+  renderAll();
+});
+
+resetFiltersBtn.addEventListener("click", () => {
+  selectedCountry = "";
+  selectedCity = "";
+  searchTerm = "";
+
+  countrySelect.value = "";
+  citySelect.innerHTML = '<option value="">Select city</option>';
+  citySelect.disabled = true;
+  searchInput.value = "";
+  resultsCount.textContent = "0";
+  emptyPlacesMessage.textContent = "Choose country and city to see places.";
+  emptyPlacesMessage.style.display = "block";
+
+  if (routeLine) {
+    map.removeLayer(routeLine);
+    routeLine = null;
+  }
+
+  clearMarkers();
+  placesList.innerHTML = "";
+  routeInfo.textContent = "No route yet.";
+  map.setView([20, 0], 2);
+});
+
+useMyLocationBtn.addEventListener("click", useMyLocation);
+
+initMap();
+populateCountries();
+renderAll();
