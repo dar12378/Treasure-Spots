@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Treasure Spots</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,10 +16,19 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>Discover hidden gems like Google Maps, but curated.</p>
+        <p>Discover hidden gems around the world.</p>
       </div>
 
-      <div class="filters-card">
+      <div class="card">
+        <h2>Search</h2>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search place name..."
+        />
+      </div>
+
+      <div class="card">
         <h2>Choose Location</h2>
 
         <label for="countrySelect">Country</label>
@@ -27,22 +41,24 @@
           <option value="">Select city</option>
         </select>
 
-        <button id="resetFiltersBtn" class="secondary-btn">Reset filters</button>
+        <button id="resetFiltersBtn" class="secondary-btn">Reset Filters</button>
       </div>
 
-      <div class="route-card">
+      <div class="card">
         <h2>Route</h2>
-        <label for="travelModeSelect">Travel mode</label>
+
+        <label for="travelModeSelect">Travel Mode</label>
         <select id="travelModeSelect">
           <option value="DRIVING">Driving</option>
           <option value="WALKING">Walking</option>
         </select>
 
-        <button id="useMyLocationBtn" class="primary-btn">Use my location</button>
-        <p id="locationStatus" class="status-text">No origin selected yet.</p>
+        <button id="useMyLocationBtn" class="primary-btn">Use My Location</button>
+        <p id="locationStatus" class="status-text">Location not selected yet.</p>
+        <p id="routeInfo" class="status-text">No route yet.</p>
       </div>
 
-      <div class="places-list-card">
+      <div class="card">
         <div class="places-header">
           <h2>Places</h2>
           <span id="resultsCount">0</span>
@@ -50,32 +66,17 @@
 
         <div id="placesList" class="places-list"></div>
         <p id="emptyPlacesMessage" class="empty-message">
-          Choose a country and city to show treasure spots.
+          Choose country and city to see places.
         </p>
-      </div>
-
-      <div class="directions-card">
-        <h2>Directions</h2>
-        <div id="directionsPanel" class="directions-panel">
-          Select a place and get route directions here.
-        </div>
       </div>
     </aside>
 
     <main class="map-area">
-      <div class="top-search-bar">
-        <div id="searchBoxHost" class="search-host"></div>
-      </div>
-
       <div id="map"></div>
     </main>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
-  <script
-    async
-    defer
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&v=weekly&loading=async&libraries=places,marker&callback=initApp"
-  ></script>
 </body>
 </html>
