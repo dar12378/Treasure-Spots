@@ -16,22 +16,20 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה, חיפוש חכם ומסלול הליכה</p>
+        <p>גלו מקומות, שכונות, רחובות ומסלולי הליכה</p>
       </div>
 
       <div class="card search-card">
         <h2>חיפוש חכם</h2>
-
         <div class="smart-search-wrap">
           <input
             id="searchInput"
             type="text"
-            placeholder="חפש מדינה, עיר, שכונה, רחוב, מספר בית, מקום או סגנון..."
+            placeholder="חפש מדינה, עיר, שכונה, רחוב, קניון, בית קפה, פארק, מקום..."
             autocomplete="off"
           />
           <div id="searchSuggestions" class="search-suggestions hidden"></div>
         </div>
-
         <button id="searchBtn" class="primary-btn">🔍 חפש</button>
       </div>
 
@@ -57,25 +55,16 @@
         </select>
 
         <label for="homeAddressInput">איפה אתה גר</label>
-        <input
-          id="homeAddressInput"
-          type="text"
-          placeholder="למשל רעננה, רחוב אחוזה 124"
-        />
+        <input id="homeAddressInput" type="text" placeholder="למשל רעננה, אחוזה 124" />
+
+        <label for="neighborhoodInput">שכונה</label>
+        <input id="neighborhoodInput" type="text" placeholder="למשל מרכז העיר / הצפון הישן" />
 
         <label for="streetInput">רחוב</label>
-        <input
-          id="streetInput"
-          type="text"
-          placeholder="למשל אחוזה"
-        />
+        <input id="streetInput" type="text" placeholder="למשל אחוזה" />
 
         <label for="houseNumberInput">מספר בית</label>
-        <input
-          id="houseNumberInput"
-          type="text"
-          placeholder="למשל 124"
-        />
+        <input id="houseNumberInput" type="text" placeholder="למשל 124" />
 
         <label for="styleSelect">סגנון</label>
         <select id="styleSelect">
@@ -83,11 +72,7 @@
         </select>
 
         <label for="customStyleInput">סגנון משלך</label>
-        <input
-          id="customStyleInput"
-          type="text"
-          placeholder="למשל שקט, יוקרתי, צילום..."
-        />
+        <input id="customStyleInput" type="text" placeholder="למשל שקט, יוקרתי, צילום..." />
 
         <button id="filterSearchBtn" class="primary-btn">חפש לפי סינון</button>
         <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
@@ -109,11 +94,7 @@
         </select>
 
         <label for="tripCustomStyle">סגנון אישי</label>
-        <input
-          id="tripCustomStyle"
-          type="text"
-          placeholder="למשל רגוע, רומנטי, אוכל טוב..."
-        />
+        <input id="tripCustomStyle" type="text" placeholder="למשל רגוע, רומנטי, אוכל טוב..." />
 
         <label for="tripHotelLevel">רמת מלון</label>
         <select id="tripHotelLevel">
@@ -134,11 +115,8 @@
           <h2>מקומות</h2>
           <span id="resultsCount">0</span>
         </div>
-
         <div id="placesList" class="places-list"></div>
-        <p id="emptyPlacesMessage" class="empty-message">
-          בחר מדינה ועיר או חפש יעד.
-        </p>
+        <p id="emptyPlacesMessage" class="empty-message">בחר מדינה ועיר או חפש יעד.</p>
       </div>
     </aside>
 
