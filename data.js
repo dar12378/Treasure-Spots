@@ -1,325 +1,167 @@
-const allCountries = [
-  "ישראל",
-  "ארצות הברית",
-  "צרפת",
-  "בריטניה",
-  "ספרד",
-  "פורטוגל",
-  "איטליה",
-  "גרמניה",
-  "הולנד",
-  "יפן"
-];
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Treasure Spots</title>
 
-const allStyles = [
-  "טבע",
-  "אוכל",
-  "נוף",
-  "אמנות",
-  "היסטוריה",
-  "משפחה",
-  "לילה",
-  "רומנטי",
-  "יוקרתי",
-  "שקט",
-  "צילום",
-  "מקומי",
-  "צעיר",
-  "קניות",
-  "חופים",
-  "תרבות",
-  "מוזיאונים",
-  "אדריכלות",
-  "טיול רגלי",
-  "נוף עירוני",
-  "פנורמי",
-  "קולינרי",
-  "אינסטגרמי",
-  "אווירה",
-  "טבע עירוני",
-  "בילוי",
-  "מוזיקה",
-  "שווקים",
-  "עתיק",
-  "הרפתקאות"
-];
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <h1>Treasure Spots</h1>
+        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה, חיפוש חכם ומסלול הליכה</p>
+      </div>
 
-const countryCities = {
-  "ישראל": ["תל אביב", "יפו", "ירושלים", "חיפה", "אילת"],
-  "ארצות הברית": ["ניו יורק", "לוס אנג'לס", "שיקגו", "סן פרנסיסקו", "מיאמי"],
-  "צרפת": ["פריז"],
-  "בריטניה": ["לונדון"],
-  "ספרד": ["ברצלונה"],
-  "פורטוגל": ["ליסבון"],
-  "איטליה": ["רומא"],
-  "גרמניה": ["ברלין"],
-  "הולנד": ["אמסטרדם"],
-  "יפן": ["טוקיו", "קיוטו"]
-};
+      <div class="card search-card">
+        <h2>חיפוש חכם</h2>
 
-const placesData = [
-  {
-    id: 1,
-    nameHe: "גן העצמאות",
-    nameEn: "Independence Park",
-    country: "ישראל",
-    countryAliases: ["ישראל", "israel"],
-    city: "תל אביב",
-    cityAliases: ["תל אביב", "tel aviv"],
-    neighborhood: "הצפון הישן",
-    neighborhoodAliases: ["הצפון הישן", "old north"],
-    street: "רחוב הירקון",
-    streetAliases: ["הירקון", "hayarkon", "ha-yarkon"],
-    category: "popular",
-    styles: ["נוף", "טבע", "משפחה", "שקט", "טיול רגלי"],
-    descriptionHe: "פארק עירוני עם תצפית לים.",
-    lat: 32.0894,
-    lng: 34.7701,
-    timezone: "Asia/Jerusalem",
-    interestScore: 92,
-    estimatedFlightUsd: 650,
-    sourceUrl: "https://www.tel-aviv.gov.il"
-  },
-  {
-    id: 2,
-    nameHe: "נמל תל אביב",
-    nameEn: "Tel Aviv Port",
-    country: "ישראל",
-    countryAliases: ["ישראל", "israel"],
-    city: "תל אביב",
-    cityAliases: ["תל אביב", "tel aviv"],
-    neighborhood: "נמל תל אביב",
-    neighborhoodAliases: ["נמל תל אביב", "tel aviv port"],
-    street: "רחוב הנמל",
-    streetAliases: ["הנמל", "hanamal", "port street"],
-    category: "popular",
-    styles: ["אוכל", "בילוי", "נוף", "לילה"],
-    descriptionHe: "אזור חוף תוסס עם מסעדות וחנויות.",
-    lat: 32.0984,
-    lng: 34.7744,
-    timezone: "Asia/Jerusalem",
-    interestScore: 94,
-    estimatedFlightUsd: 650,
-    sourceUrl: "https://www.tel-aviv.gov.il"
-  },
-  {
-    id: 3,
-    nameHe: "שוק הפשפשים",
-    nameEn: "Jaffa Flea Market",
-    country: "ישראל",
-    countryAliases: ["ישראל", "israel"],
-    city: "יפו",
-    cityAliases: ["יפו", "jaffa", "yafo"],
-    neighborhood: "שוק הפשפשים",
-    neighborhoodAliases: ["שוק הפשפשים", "flea market area"],
-    street: "רחוב עולי ציון",
-    streetAliases: ["עולי ציון", "olei zion"],
-    category: "popular",
-    styles: ["אוכל", "היסטוריה", "שווקים", "מקומי", "לילה"],
-    descriptionHe: "אזור היסטורי עם אוכל, חנויות ואווירה מיוחדת.",
-    lat: 32.0544,
-    lng: 34.7562,
-    timezone: "Asia/Jerusalem",
-    interestScore: 95,
-    estimatedFlightUsd: 650,
-    sourceUrl: "https://www.visit-tel-aviv.com"
-  },
-  {
-    id: 4,
-    nameHe: "גן סאקר",
-    nameEn: "Sacher Park",
-    country: "ישראל",
-    countryAliases: ["ישראל", "israel"],
-    city: "ירושלים",
-    cityAliases: ["ירושלים", "jerusalem"],
-    neighborhood: "מרכז העיר",
-    neighborhoodAliases: ["מרכז העיר", "city center"],
-    street: "שדרות בן צבי",
-    streetAliases: ["בן צבי", "ben zvi"],
-    category: "recommended",
-    styles: ["טבע", "משפחה", "שקט", "טיול רגלי"],
-    descriptionHe: "פארק גדול ונעים במרכז העיר.",
-    lat: 31.7784,
-    lng: 35.2057,
-    timezone: "Asia/Jerusalem",
-    interestScore: 84,
-    estimatedFlightUsd: 650,
-    sourceUrl: "https://www.itraveljerusalem.com"
-  },
-  {
-    id: 5,
-    nameHe: "טיילת לואי",
-    nameEn: "Louis Promenade",
-    country: "ישראל",
-    countryAliases: ["ישראל", "israel"],
-    city: "חיפה",
-    cityAliases: ["חיפה", "haifa"],
-    neighborhood: "הכרמל",
-    neighborhoodAliases: ["הכרמל", "carmel"],
-    street: "שדרות הנשיא",
-    streetAliases: ["שדרות הנשיא", "hanasi"],
-    category: "popular",
-    styles: ["נוף", "צילום", "רומנטי", "פנורמי"],
-    descriptionHe: "טיילת עם נוף מרשים של מפרץ חיפה.",
-    lat: 32.8183,
-    lng: 34.9817,
-    timezone: "Asia/Jerusalem",
-    interestScore: 88,
-    estimatedFlightUsd: 650,
-    sourceUrl: "https://www.visit-haifa.org"
-  },
-  {
-    id: 6,
-    nameHe: "סנטרל פארק",
-    nameEn: "Central Park",
-    country: "ארצות הברית",
-    countryAliases: ["ארצות הברית", "usa", "united states", "us", "america", "ארהב", "ארה\"ב"],
-    city: "ניו יורק",
-    cityAliases: ["ניו יורק", "new york", "nyc"],
-    neighborhood: "מנהטן",
-    neighborhoodAliases: ["מנהטן", "manhattan"],
-    street: "5th Avenue",
-    streetAliases: ["5th avenue", "fifth avenue"],
-    category: "popular",
-    styles: ["טבע", "משפחה", "נוף", "טיול רגלי", "צילום"],
-    descriptionHe: "פארק מפורסם בלב מנהטן.",
-    lat: 40.7829,
-    lng: -73.9654,
-    timezone: "America/New_York",
-    interestScore: 98,
-    estimatedFlightUsd: 980,
-    sourceUrl: "https://www.centralparknyc.org"
-  },
-  {
-    id: 7,
-    nameHe: "היי ליין",
-    nameEn: "The High Line",
-    country: "ארצות הברית",
-    countryAliases: ["ארצות הברית", "usa", "united states", "us", "america"],
-    city: "ניו יורק",
-    cityAliases: ["ניו יורק", "new york", "nyc"],
-    neighborhood: "צ'לסי",
-    neighborhoodAliases: ["צ'לסי", "chelsea"],
-    street: "High Line",
-    streetAliases: ["high line"],
-    category: "recommended",
-    styles: ["נוף", "אוכל", "אמנות", "טיול רגלי", "צילום"],
-    descriptionHe: "פארק עילי מיוחד על מסילת רכבת ישנה.",
-    lat: 40.7480,
-    lng: -74.0048,
-    timezone: "America/New_York",
-    interestScore: 90,
-    estimatedFlightUsd: 980,
-    sourceUrl: "https://www.thehighline.org"
-  },
-  {
-    id: 8,
-    nameHe: "גריפית' אובזרבטורי",
-    nameEn: "Griffith Observatory",
-    country: "ארצות הברית",
-    countryAliases: ["ארצות הברית", "usa", "united states"],
-    city: "לוס אנג'לס",
-    cityAliases: ["לוס אנג'לס", "los angeles", "la"],
-    neighborhood: "גריפית' פארק",
-    neighborhoodAliases: ["griffith park"],
-    street: "2800 E Observatory Rd",
-    streetAliases: ["observatory road"],
-    category: "popular",
-    styles: ["נוף", "צילום", "רומנטי", "פנורמי"],
-    descriptionHe: "תצפית מפורסמת על לוס אנג'לס.",
-    lat: 34.1184,
-    lng: -118.3004,
-    timezone: "America/Los_Angeles",
-    interestScore: 94,
-    estimatedFlightUsd: 1200,
-    sourceUrl: "https://griffithobservatory.org"
-  },
-  {
-    id: 9,
-    nameHe: "מילניום פארק",
-    nameEn: "Millennium Park",
-    country: "ארצות הברית",
-    countryAliases: ["ארצות הברית", "usa", "united states"],
-    city: "שיקגו",
-    cityAliases: ["שיקגו", "chicago"],
-    neighborhood: "Downtown",
-    neighborhoodAliases: ["downtown"],
-    street: "Michigan Ave",
-    streetAliases: ["michigan avenue"],
-    category: "popular",
-    styles: ["נוף", "אמנות", "משפחה", "צילום"],
-    descriptionHe: "פארק מפורסם בלב שיקגו.",
-    lat: 41.8826,
-    lng: -87.6226,
-    timezone: "America/Chicago",
-    interestScore: 91,
-    estimatedFlightUsd: 1050,
-    sourceUrl: "https://www.chicago.gov"
-  },
-  {
-    id: 10,
-    nameHe: "גן התה היפני",
-    nameEn: "Japanese Tea Garden",
-    country: "ארצות הברית",
-    countryAliases: ["ארצות הברית", "usa", "united states"],
-    city: "סן פרנסיסקו",
-    cityAliases: ["סן פרנסיסקו", "san francisco", "sf"],
-    neighborhood: "Golden Gate Park",
-    neighborhoodAliases: ["golden gate park"],
-    street: "75 Hagiwara Tea Garden Dr",
-    streetAliases: ["hagiwara tea garden drive"],
-    category: "recommended",
-    styles: ["טבע", "שקט", "רומנטי", "צילום"],
-    descriptionHe: "פינה שקטה ומיוחדת בגולדן גייט פארק.",
-    lat: 37.7701,
-    lng: -122.4702,
-    timezone: "America/Los_Angeles",
-    interestScore: 86,
-    estimatedFlightUsd: 1180,
-    sourceUrl: "https://gggp.org"
-  },
-  {
-    id: 11,
-    nameHe: "לובר",
-    nameEn: "Louvre Museum",
-    country: "צרפת",
-    countryAliases: ["צרפת", "france"],
-    city: "פריז",
-    cityAliases: ["פריז", "paris"],
-    neighborhood: "הרובע הראשון",
-    neighborhoodAliases: ["הרובע הראשון", "1st arrondissement"],
-    street: "Rue de Rivoli",
-    streetAliases: ["rue de rivoli"],
-    category: "popular",
-    styles: ["אמנות", "היסטוריה", "מוזיאונים", "תרבות"],
-    descriptionHe: "אחד המוזיאונים המפורסמים בעולם.",
-    lat: 48.8606,
-    lng: 2.3376,
-    timezone: "Europe/Paris",
-    interestScore: 99,
-    estimatedFlightUsd: 720,
-    sourceUrl: "https://www.louvre.fr"
-  },
-  {
-    id: 12,
-    nameHe: "תעלת סן מרטן",
-    nameEn: "Canal Saint-Martin",
-    country: "צרפת",
-    countryAliases: ["צרפת", "france"],
-    city: "פריז",
-    cityAliases: ["פריז", "paris"],
-    neighborhood: "סן מרטן",
-    neighborhoodAliases: ["סן מרטן", "saint martin"],
-    street: "Quai de Valmy",
-    streetAliases: ["quai de valmy"],
-    category: "recommended",
-    styles: ["אוכל", "רומנטי", "מקומי", "טיול רגלי", "אווירה"],
-    descriptionHe: "אזור מקומי אהוב לטיול ובתי קפה.",
-    lat: 48.8722,
-    lng: 2.3638,
-    timezone: "Europe/Paris",
-    interestScore: 85,
-    estimatedFlightUsd: 720,
-    sourceUrl: "https://parisjetaime.com"
-  }
-];
+        <div class="smart-search-wrap">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="חפש מדינה, עיר, שכונה, רחוב, מספר בית, מקום או סגנון..."
+            autocomplete="off"
+          />
+          <div id="searchSuggestions" class="search-suggestions hidden"></div>
+        </div>
+
+        <button id="searchBtn" class="primary-btn">🔍 חפש</button>
+      </div>
+
+      <div class="card">
+        <h2>תצוגה</h2>
+        <div class="view-switch">
+          <button id="showGlobeBtn" class="view-btn active">גלובוס</button>
+          <button id="showMapBtn" class="view-btn">מפה</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>סינון</h2>
+
+        <label for="countrySelect">מדינה</label>
+        <select id="countrySelect">
+          <option value="">בחר מדינה</option>
+        </select>
+
+        <label for="citySelect">עיר</label>
+        <select id="citySelect" disabled>
+          <option value="">בחר עיר</option>
+        </select>
+
+        <label for="homeAddressInput">איפה אתה גר</label>
+        <input
+          id="homeAddressInput"
+          type="text"
+          placeholder="למשל רעננה, רחוב אחוזה 124"
+        />
+
+        <label for="streetInput">רחוב</label>
+        <input
+          id="streetInput"
+          type="text"
+          placeholder="למשל אחוזה"
+        />
+
+        <label for="houseNumberInput">מספר בית</label>
+        <input
+          id="houseNumberInput"
+          type="text"
+          placeholder="למשל 124"
+        />
+
+        <label for="styleSelect">סגנון</label>
+        <select id="styleSelect">
+          <option value="">הכל</option>
+        </select>
+
+        <label for="customStyleInput">סגנון משלך</label>
+        <input
+          id="customStyleInput"
+          type="text"
+          placeholder="למשל שקט, יוקרתי, צילום..."
+        />
+
+        <button id="filterSearchBtn" class="primary-btn">חפש לפי סינון</button>
+        <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
+        <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
+      </div>
+
+      <div class="card premium-card">
+        <h2>Premium - תכנון חופשה</h2>
+
+        <label for="tripBudget">תקציב בדולר</label>
+        <input id="tripBudget" type="number" placeholder="למשל 1500" />
+
+        <label for="tripDays">מספר ימים</label>
+        <input id="tripDays" type="number" placeholder="למשל 5" />
+
+        <label for="tripStyle">סגנון חופשה</label>
+        <select id="tripStyle">
+          <option value="">בחר סגנון</option>
+        </select>
+
+        <label for="tripCustomStyle">סגנון אישי</label>
+        <input
+          id="tripCustomStyle"
+          type="text"
+          placeholder="למשל רגוע, רומנטי, אוכל טוב..."
+        />
+
+        <label for="tripHotelLevel">רמת מלון</label>
+        <select id="tripHotelLevel">
+          <option value="">בחר רמת מלון</option>
+          <option value="3 כוכבים">3 כוכבים</option>
+          <option value="4 כוכבים">4 כוכבים</option>
+          <option value="5 כוכבים">5 כוכבים</option>
+          <option value="בוטיק">בוטיק</option>
+          <option value="יוקרתי">יוקרתי</option>
+        </select>
+
+        <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
+        <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
+      </div>
+
+      <div class="card">
+        <div class="places-header">
+          <h2>מקומות</h2>
+          <span id="resultsCount">0</span>
+        </div>
+
+        <div id="placesList" class="places-list"></div>
+        <p id="emptyPlacesMessage" class="empty-message">
+          בחר מדינה ועיר או חפש יעד.
+        </p>
+      </div>
+    </aside>
+
+    <main class="viewer-area">
+      <div id="globeSection" class="viewer-section"></div>
+      <div id="mapSection" class="viewer-section hidden"></div>
+
+      <div id="placeOverlay" class="place-overlay hidden">
+        <button id="closeOverlayBtn" class="overlay-close">×</button>
+        <div id="overlayBadge" class="overlay-badge">מומלץ</div>
+        <h3 id="overlayTitle"></h3>
+        <p id="overlayMeta"></p>
+        <p id="overlayDescription"></p>
+        <div class="overlay-actions">
+          <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">למקור</a>
+          <button id="overlayFocusBtn" class="overlay-focus-btn">התמקד שוב</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
