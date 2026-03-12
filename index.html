@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Treasure Spots</title>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
@@ -17,16 +14,25 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות אמיתיים בעולם — בגלובוס ובמפה</p>
+        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה וחיפוש חכם</p>
       </div>
 
       <div class="card">
-        <h2>חיפוש</h2>
-        <input id="searchInput" type="text" placeholder="חפש מקום, עיר או מדינה..." />
+        <h2>חיפוש חכם</h2>
+        <input id="searchInput" type="text" placeholder="חפש מדינה, עיר או מקום..." />
+        <button id="searchBtn" class="primary-btn">חפש</button>
       </div>
 
       <div class="card">
-        <h2>בחירת מיקום</h2>
+        <h2>תצוגה</h2>
+        <div class="view-switch">
+          <button id="showGlobeBtn" class="view-btn active">גלובוס</button>
+          <button id="showMapBtn" class="view-btn">מפה</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>סינון</h2>
 
         <label for="countrySelect">מדינה</label>
         <select id="countrySelect">
@@ -38,7 +44,30 @@
           <option value="">בחר עיר</option>
         </select>
 
+        <label for="styleSelect">סגנון</label>
+        <select id="styleSelect">
+          <option value="">הכל</option>
+        </select>
+
         <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
+      </div>
+
+      <div class="card premium-card">
+        <h2>Premium - תכנון חופשה</h2>
+
+        <label for="tripBudget">תקציב בדולר</label>
+        <input id="tripBudget" type="number" placeholder="למשל 1500" />
+
+        <label for="tripDays">מספר ימים</label>
+        <input id="tripDays" type="number" placeholder="למשל 5" />
+
+        <label for="tripStyle">סגנון חופשה</label>
+        <select id="tripStyle">
+          <option value="">בחר סגנון</option>
+        </select>
+
+        <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
+        <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
       </div>
 
       <div class="card">
@@ -49,17 +78,12 @@
 
         <div id="placesList" class="places-list"></div>
         <p id="emptyPlacesMessage" class="empty-message">
-          בחר מדינה ועיר כדי לראות מקומות.
+          בחר מדינה ועיר או חפש יעד.
         </p>
       </div>
     </aside>
 
     <main class="viewer-area">
-      <div class="top-bar">
-        <button id="showGlobeBtn" class="view-btn active">גלובוס</button>
-        <button id="showMapBtn" class="view-btn">מפה</button>
-      </div>
-
       <div id="globeSection" class="viewer-section"></div>
       <div id="mapSection" class="viewer-section hidden"></div>
 
@@ -69,7 +93,10 @@
         <h3 id="overlayTitle"></h3>
         <p id="overlayMeta"></p>
         <p id="overlayDescription"></p>
-        <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">למקור</a>
+        <div class="overlay-actions">
+          <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">למקור</a>
+          <button id="overlayFocusBtn" class="overlay-focus-btn">התמקד שוב</button>
+        </div>
       </div>
     </main>
   </div>
