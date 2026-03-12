@@ -103,17 +103,16 @@ button {
 }
 
 .search-suggestions {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  left: 0;
-  z-index: 10002;
+  position: fixed;
+  top: 130px;
+  right: 20px;
+  width: 350px;
+  z-index: 999999;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
-  overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -498,6 +497,13 @@ button {
   .sidebar {
     border-left: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .search-suggestions {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    top: 120px;
   }
 
   .viewer-area {
