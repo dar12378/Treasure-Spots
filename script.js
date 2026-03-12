@@ -2,11 +2,15 @@ const countrySelect = document.getElementById("countrySelect");
 const citySelect = document.getElementById("citySelect");
 const styleSelect = document.getElementById("styleSelect");
 const customStyleInput = document.getElementById("customStyleInput");
+const streetInput = document.getElementById("streetInput");
+const houseNumberInput = document.getElementById("houseNumberInput");
+const homeAddressInput = document.getElementById("homeAddressInput");
 
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
 const searchSuggestions = document.getElementById("searchSuggestions");
 const filterSearchBtn = document.getElementById("filterSearchBtn");
+const walkRouteBtn = document.getElementById("walkRouteBtn");
 const resetFiltersBtn = document.getElementById("resetFiltersBtn");
 
 const showGlobeBtn = document.getElementById("showGlobeBtn");
@@ -40,12 +44,16 @@ let selectedCountry = "";
 let selectedCity = "";
 let selectedStyle = "";
 let customStyle = "";
+let selectedStreet = "";
+let selectedHouseNumber = "";
 let searchTerm = "";
 let activePlaceId = null;
 
 let globe;
 let map;
 let mapMarkers = [];
+let routeLine = null;
+let startMarker = null;
 
 function normalizeText(text) {
   return String(text || "")
@@ -157,6 +165,17 @@ function getFilteredPlaces() {
       const cityMatch = selectedCity ? place.city === selectedCity : true;
       const styleMatch = selectedStyle ? place.styles.includes(selectedStyle) : true;
 
+      const streetMatch = selectedStreet
+        ? (
+            includesNormalized(place.street || "", selectedStreet) ||
+            (place.streetAliases || []).some((alias) => includesNormalized(alias, selectedStreet))
+          )
+        : true;
+
+      const houseNumberMatch = selectedHouseNumber
+        ? includesNormalized(place.houseNumber || "", selectedHouseNumber)
+        : true;
+
       const customStyleMatch = customStyle
         ? (
             place.styles.some((style) => includesNormalized(style, customStyle)) ||
@@ -172,6 +191,7 @@ function getFilteredPlaces() {
         place.city,
         place.neighborhood || "",
         place.street || "",
+        place.houseNumber || "",
         ...(place.countryAliases || []),
         ...(place.cityAliases || []),
         ...(place.neighborhoodAliases || []),
@@ -182,7 +202,15 @@ function getFilteredPlaces() {
 
       const searchMatch = searchTerm ? includesNormalized(textBlob, searchTerm) : true;
 
-      return countryMatch && cityMatch && styleMatch && customStyleMatch && searchMatch;
+      return (
+        countryMatch &&
+        cityMatch &&
+        styleMatch &&
+        streetMatch &&
+        houseNumberMatch &&
+        customStyleMatch &&
+        searchMatch
+      );
     })
     .sort((a, b) => scorePlace(b) - scorePlace(a));
 }
@@ -230,7 +258,7 @@ function buildSuggestions(query) {
           meta: country,
           country,
           city,
-          priority: 200
+          priority: 220
         });
       }
     });
@@ -266,6 +294,16 @@ function buildSuggestions(query) {
         meta: `${place.city} • ${place.country}`,
         placeId: place.id,
         priority: 255
+      });
+    }
+
+    if (place.houseNumber && includesNormalized(place.houseNumber, q) && place.street) {
+      suggestions.push({
+        type: "address",
+        title: `${place.street} ${place.houseNumber}`,
+        meta: `${place.city} • ${place.country}`,
+        placeId: place.id,
+        priority: 265
       });
     }
 
@@ -319,6 +357,7 @@ function renderSuggestions(query) {
     if (item.type === "style") icon = "✨";
     if (item.type === "neighborhood") icon = "🏘️";
     if (item.type === "street") icon = "🛣️";
+    if (item.type === "address") icon = "🏠";
     if (item.type === "place") icon = "📌";
 
     div.innerHTML = `
@@ -349,7 +388,11 @@ function applySuggestion(item) {
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
-    if (topPlace) openPlace(topPlace.id, true);
+    if (topPlace) {
+      openPlace(topPlace.id, true);
+    } else {
+      alert(`עדיין אין מקומות מוכנים במערכת עבור ${item.country}.`);
+    }
     return;
   }
 
@@ -381,7 +424,12 @@ function applySuggestion(item) {
     return;
   }
 
-  if (item.type === "neighborhood" || item.type === "street" || item.type === "place") {
+  if (
+    item.type === "neighborhood" ||
+    item.type === "street" ||
+    item.type === "address" ||
+    item.type === "place"
+  ) {
     const place = placesData.find((p) => p.id === item.placeId);
     if (!place) return;
 
@@ -462,6 +510,18 @@ function clearMapMarkers() {
   mapMarkers = [];
 }
 
+function clearRoute() {
+  if (routeLine) {
+    map.removeLayer(routeLine);
+    routeLine = null;
+  }
+
+  if (startMarker) {
+    map.removeLayer(startMarker);
+    startMarker = null;
+  }
+}
+
 function renderMapMarkers() {
   clearMapMarkers();
 
@@ -479,7 +539,7 @@ function renderMapMarkers() {
         <strong>${escapeHtml(place.nameHe)}</strong><br>
         ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
         ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? "<br>" : ""}
-        ${escapeHtml(place.street || "")}${place.street ? "<br>" : ""}
+        ${escapeHtml(place.street || "")}${place.street ? " " : ""}${escapeHtml(place.houseNumber || "")}<br>
         שעה מקומית: ${escapeHtml(getLocalTime(place.timezone))}
       </div>
     `);
@@ -537,7 +597,7 @@ function renderPlacesList() {
 
         <div class="place-meta">
           ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
-          ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? " • " : ""}${escapeHtml(place.street || "")}<br>
+          ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? " • " : ""}${escapeHtml(place.street || "")}${place.street ? " " : ""}${escapeHtml(place.houseNumber || "")}<br>
           שעה: ${escapeHtml(getLocalTime(place.timezone))} • עניין: ${place.interestScore}/100 • טיסה: $${place.estimatedFlightUsd}
         </div>
 
@@ -568,7 +628,7 @@ function openOverlay(place) {
 
   overlayTitle.textContent = place.nameHe;
   overlayMeta.textContent =
-    `${place.city}, ${place.country} • ${place.neighborhood || ""}${place.street ? " • " + place.street : ""} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
+    `${place.city}, ${place.country} • ${place.neighborhood || ""}${place.street ? " • " + place.street : ""}${place.houseNumber ? " " + place.houseNumber : ""} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
   overlayDescription.textContent = place.descriptionHe;
   overlaySourceBtn.href = place.sourceUrl;
 
@@ -630,6 +690,110 @@ function renderAll() {
   renderMapMarkers();
 }
 
+function parseAddressToCoords(addressText) {
+  const q = normalizeText(addressText);
+  if (!q) return null;
+
+  const matchedPlace = placesData.find((place) => {
+    const textBlob = [
+      place.city,
+      place.country,
+      place.neighborhood || "",
+      place.street || "",
+      place.houseNumber || "",
+      ...(place.cityAliases || []),
+      ...(place.streetAliases || [])
+    ].join(" ");
+
+    return includesNormalized(textBlob, q);
+  });
+
+  if (matchedPlace) {
+    return {
+      lat: matchedPlace.lat,
+      lng: matchedPlace.lng,
+      label: `${matchedPlace.city} ${matchedPlace.street || ""} ${matchedPlace.houseNumber || ""}`.trim()
+    };
+  }
+
+  const matchedCity = Object.entries(countryCities).find(([country, cities]) =>
+    cities.some((city) => includesNormalized(city, q))
+  );
+
+  if (matchedCity) {
+    const cityName = matchedCity[1].find((city) => includesNormalized(city, q));
+    const placeInCity = placesData.find((place) => place.city === cityName);
+
+    if (placeInCity) {
+      return {
+        lat: placeInCity.lat,
+        lng: placeInCity.lng,
+        label: cityName
+      };
+    }
+  }
+
+  return null;
+}
+
+function drawWalkingRoute(fromCoords, toCoords) {
+  clearRoute();
+
+  routeLine = L.polyline(
+    [
+      [fromCoords.lat, fromCoords.lng],
+      [toCoords.lat, toCoords.lng]
+    ],
+    {
+      weight: 5,
+      opacity: 0.8
+    }
+  ).addTo(map);
+
+  startMarker = L.marker([fromCoords.lat, fromCoords.lng]).addTo(map);
+  startMarker.bindPopup(`נקודת התחלה: ${escapeHtml(fromCoords.label)}`).openPopup();
+
+  const bounds = L.latLngBounds([
+    [fromCoords.lat, fromCoords.lng],
+    [toCoords.lat, toCoords.lng]
+  ]);
+
+  map.fitBounds(bounds, { padding: [40, 40] });
+}
+
+function createWalkingRoute() {
+  const homeText = homeAddressInput.value.trim();
+
+  if (!homeText) {
+    alert("כתוב קודם איפה אתה גר.");
+    return;
+  }
+
+  const places = getFilteredPlaces();
+
+  if (!places.length) {
+    alert("אין מקום יעד כרגע למסלול הליכה.");
+    return;
+  }
+
+  const destination = places[0];
+  const homeCoords = parseAddressToCoords(homeText);
+
+  if (!homeCoords) {
+    alert("לא הצלחתי להבין את כתובת ההתחלה. נסה לכתוב עיר, רחוב או מקום קרוב.");
+    return;
+  }
+
+  setMapView();
+
+  setTimeout(() => {
+    drawWalkingRoute(homeCoords, {
+      lat: destination.lat,
+      lng: destination.lng
+    });
+  }, 200);
+}
+
 function runSearch() {
   const raw = searchInput.value.trim();
   const q = normalizeText(raw);
@@ -652,6 +816,7 @@ function runSearch() {
     } else {
       alert(`עדיין אין מקומות מוכנים במערכת עבור ${matchingCountry}.`);
     }
+
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -683,6 +848,7 @@ function runSearch() {
     } else {
       alert(`אין עדיין מקומות מוכנים במערכת עבור ${matchingCity}.`);
     }
+
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -700,7 +866,8 @@ function runSearch() {
     includesNormalized(place.nameHe, q) ||
     includesNormalized(place.nameEn, q) ||
     includesNormalized(place.neighborhood || "", q) ||
-    includesNormalized(place.street || "", q)
+    includesNormalized(place.street || "", q) ||
+    includesNormalized(place.houseNumber || "", q)
   );
 
   if (exactPlace) {
@@ -726,6 +893,8 @@ function runFilterSearch() {
   selectedCountry = countrySelect.value;
   selectedCity = citySelect.value;
   selectedStyle = styleSelect.value;
+  selectedStreet = streetInput.value.trim();
+  selectedHouseNumber = houseNumberInput.value.trim();
 
   renderAll();
 
@@ -786,6 +955,8 @@ function resetAll() {
   selectedCity = "";
   selectedStyle = "";
   customStyle = "";
+  selectedStreet = "";
+  selectedHouseNumber = "";
   searchTerm = "";
   activePlaceId = null;
 
@@ -794,9 +965,13 @@ function resetAll() {
   citySelect.disabled = true;
   styleSelect.value = "";
   customStyleInput.value = "";
+  streetInput.value = "";
+  houseNumberInput.value = "";
+  homeAddressInput.value = "";
   searchInput.value = "";
 
   closeOverlay();
+  clearRoute();
   renderAll();
 
   setGlobeView();
@@ -811,12 +986,14 @@ countrySelect.addEventListener("change", (event) => {
   citySelect.value = "";
   populateCities(selectedCountry);
   closeOverlay();
+  clearRoute();
   renderAll();
 });
 
 citySelect.addEventListener("change", (event) => {
   selectedCity = event.target.value;
   closeOverlay();
+  clearRoute();
   renderAll();
 });
 
@@ -832,6 +1009,7 @@ customStyleInput.addEventListener("input", (event) => {
 
 searchBtn.addEventListener("click", runSearch);
 filterSearchBtn.addEventListener("click", runFilterSearch);
+walkRouteBtn.addEventListener("click", createWalkingRoute);
 
 searchInput.addEventListener("input", (event) => {
   const value = event.target.value.trim();
@@ -875,7 +1053,6 @@ initGlobe();
 initMap();
 renderAll();
 
-/* Service Worker - אופליין + התקנה כאפליקציה */
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     navigator.serviceWorker
