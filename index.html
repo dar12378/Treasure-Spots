@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Treasure Spots Globe</title>
+  <title>Treasure Spots</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 </head>
@@ -12,61 +17,65 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>Explore real places on a 3D globe.</p>
+        <p>גלו מקומות אמיתיים בעולם — בגלובוס ובמפה</p>
       </div>
 
       <div class="card">
-        <h2>Search</h2>
-        <input id="searchInput" type="text" placeholder="Search place, city or country..." />
+        <h2>חיפוש</h2>
+        <input id="searchInput" type="text" placeholder="חפש מקום, עיר או מדינה..." />
       </div>
 
       <div class="card">
-        <h2>Choose Location</h2>
+        <h2>בחירת מיקום</h2>
 
-        <label for="countrySelect">Country</label>
+        <label for="countrySelect">מדינה</label>
         <select id="countrySelect">
-          <option value="">Select country</option>
+          <option value="">בחר מדינה</option>
         </select>
 
-        <label for="citySelect">City</label>
+        <label for="citySelect">עיר</label>
         <select id="citySelect" disabled>
-          <option value="">Select city</option>
+          <option value="">בחר עיר</option>
         </select>
 
-        <button id="resetFiltersBtn" class="secondary-btn">Reset Filters</button>
+        <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
       </div>
 
       <div class="card">
         <div class="places-header">
-          <h2>Places</h2>
+          <h2>מקומות</h2>
           <span id="resultsCount">0</span>
         </div>
 
         <div id="placesList" class="places-list"></div>
         <p id="emptyPlacesMessage" class="empty-message">
-          Choose a country and city to show places.
+          בחר מדינה ועיר כדי לראות מקומות.
         </p>
       </div>
     </aside>
 
-    <main class="globe-area">
-      <div id="globeViz"></div>
+    <main class="viewer-area">
+      <div class="top-bar">
+        <button id="showGlobeBtn" class="view-btn active">גלובוס</button>
+        <button id="showMapBtn" class="view-btn">מפה</button>
+      </div>
+
+      <div id="globeSection" class="viewer-section"></div>
+      <div id="mapSection" class="viewer-section hidden"></div>
 
       <div id="placeOverlay" class="place-overlay hidden">
         <button id="closeOverlayBtn" class="overlay-close">×</button>
-        <div class="overlay-badge" id="overlayBadge">recommended</div>
-        <h3 id="overlayTitle">Place name</h3>
-        <p id="overlayMeta">City, Country</p>
-        <p id="overlayDescription">Description</p>
-
-        <div class="overlay-actions">
-          <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">Open Source</a>
-          <button id="overlayFocusBtn" class="overlay-focus-btn">Focus Again</button>
-        </div>
+        <div id="overlayBadge" class="overlay-badge">מומלץ</div>
+        <h3 id="overlayTitle"></h3>
+        <p id="overlayMeta"></p>
+        <p id="overlayDescription"></p>
+        <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">למקור</a>
       </div>
     </main>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
