@@ -24,7 +24,7 @@
           <input
             id="searchInput"
             type="text"
-            placeholder="חפש מדינה, עיר, מקום או סגנון..."
+            placeholder="חפש מדינה, עיר, שכונה, רחוב, מקום או סגנון..."
             autocomplete="off"
           />
           <div id="searchSuggestions" class="search-suggestions hidden"></div>
@@ -89,6 +89,16 @@
           type="text"
           placeholder="למשל רגוע, רומנטי, אוכל טוב..."
         />
+
+        <label for="tripHotelLevel">רמת מלון</label>
+        <select id="tripHotelLevel">
+          <option value="">בחר רמת מלון</option>
+          <option value="3 כוכבים">3 כוכבים</option>
+          <option value="4 כוכבים">4 כוכבים</option>
+          <option value="5 כוכבים">5 כוכבים</option>
+          <option value="בוטיק">בוטיק</option>
+          <option value="יוקרתי">יוקרתי</option>
+        </select>
 
         <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
         <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
