@@ -131,7 +131,6 @@ function getPlaceSearchScore(place, query) {
 
   if (includesNormalized(place.nameHe, q)) score += 120;
   if (includesNormalized(place.nameEn, q)) score += 110;
-
   if (normalizeText(place.nameHe) === q) score += 80;
   if (normalizeText(place.nameEn) === q) score += 75;
 
@@ -142,11 +141,9 @@ function getPlaceSearchScore(place, query) {
   if ((place.countryAliases || []).some((alias) => includesNormalized(alias, q))) score += 65;
 
   if ((place.styles || []).some((style) => includesNormalized(style, q))) score += 55;
-
   if (includesNormalized(place.descriptionHe, q)) score += 20;
 
   score += (place.interestScore || 0) / 20;
-
   return score;
 }
 
@@ -423,7 +420,6 @@ function initGlobe() {
 
   globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 0);
   resizeGlobe();
-
   window.addEventListener("resize", resizeGlobe);
 }
 
@@ -664,6 +660,7 @@ function runSearch() {
 
   let matchingCity = null;
   let matchingCityCountry = null;
+
   Object.entries(countryCities).some(([country, cities]) => {
     const city = cities.find((c) => includesNormalized(c, q));
     if (city) {
@@ -756,8 +753,7 @@ function buildPremiumPlan() {
     `תוכנית פרימיום לדוגמה: ${days} ימים ב${selectedCity}, ${selectedCountry}. ` +
     `סגנון: ${chosenStyle || "כללי"}. ` +
     `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
-    `תקציב כולל: $${budget}. ` +
-    `אפשר לשדרג בהמשך למערכת שבונה מסלול מלא עם טיסות, לינה ואטרקציות.`;
+    `תקציב כולל: $${budget}.`;
 }
 
 function resetAll() {
