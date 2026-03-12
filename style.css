@@ -65,6 +65,13 @@ body {
   z-index: 10000;
 }
 
+.route-help {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
 .card h2 {
   font-size: 1.05rem;
   margin-bottom: 14px;
@@ -90,6 +97,17 @@ select {
   font-size: 0.95rem;
   background: #0f172a;
   color: #ffffff;
+  outline: none;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+input:focus,
+select:focus {
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
 button {
@@ -145,9 +163,12 @@ button {
 .primary-btn,
 .secondary-btn,
 .premium-btn,
-.view-btn {
+.view-btn,
+.focus-btn,
+.overlay-focus-btn {
   border-radius: 12px;
   font-weight: 700;
+  transition: 0.2s;
 }
 
 .primary-btn,
@@ -156,6 +177,16 @@ button {
   width: 100%;
   height: 44px;
   margin-top: 12px;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.premium-btn:hover,
+.view-btn:hover,
+.focus-btn:hover,
+.overlay-focus-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
 }
 
 .primary-btn {
@@ -285,6 +316,12 @@ button {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  transition: 0.2s;
+}
+
+.source-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
 }
 
 .empty-message,
@@ -508,5 +545,12 @@ button {
 
   .viewer-area {
     height: 72vh;
+  }
+
+  .place-overlay {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: 12px;
   }
 }
