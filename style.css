@@ -19,7 +19,7 @@ body {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 390px 1fr;
   width: 100%;
   height: 100vh;
 }
@@ -44,6 +44,7 @@ body {
 .brand-block p {
   color: #9ca3af;
   font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .card {
@@ -64,7 +65,7 @@ body {
 label {
   display: block;
   margin-bottom: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
   font-weight: 700;
   color: #d1d5db;
   font-size: 0.92rem;
@@ -82,27 +83,52 @@ select {
   color: #ffffff;
 }
 
-.secondary-btn,
-.focus-btn,
-.source-btn,
-.view-btn {
+button {
   border: none;
-  border-radius: 12px;
   cursor: pointer;
+}
+
+.primary-btn,
+.secondary-btn,
+.premium-btn,
+.focus-btn,
+.view-btn,
+.overlay-focus-btn {
+  border-radius: 12px;
   font-weight: 700;
 }
 
-.secondary-btn {
+.primary-btn,
+.secondary-btn,
+.premium-btn {
   width: 100%;
   height: 44px;
   margin-top: 12px;
+}
+
+.primary-btn {
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+.secondary-btn {
   background: #facc15;
   color: #111827;
 }
 
+.premium-btn {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: white;
+}
+
+.view-switch {
+  display: flex;
+  gap: 10px;
+}
+
 .view-btn {
-  height: 40px;
-  padding: 0 16px;
+  flex: 1;
+  height: 42px;
   background: rgba(255, 255, 255, 0.08);
   color: white;
 }
@@ -110,24 +136,6 @@ select {
 .view-btn.active {
   background: #38bdf8;
   color: #0b1220;
-}
-
-.focus-btn {
-  width: 100%;
-  height: 40px;
-  background: #38bdf8;
-  color: #0b1220;
-}
-
-.source-btn {
-  width: 100%;
-  height: 40px;
-  background: #1f2937;
-  color: #ffffff;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .places-header {
@@ -174,6 +182,7 @@ select {
   font-weight: 700;
   margin-bottom: 8px;
   font-size: 0.9rem;
+  line-height: 1.6;
 }
 
 .place-desc {
@@ -208,10 +217,30 @@ select {
   gap: 8px;
 }
 
-.empty-message {
+.focus-btn {
+  height: 40px;
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+.source-btn {
+  height: 40px;
+  background: #1f2937;
+  color: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.empty-message,
+.premium-output {
   margin-top: 10px;
   color: #9ca3af;
   font-size: 0.92rem;
+  line-height: 1.6;
 }
 
 .viewer-area {
@@ -219,15 +248,6 @@ select {
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at center, #10203b 0%, #050b16 68%);
-}
-
-.top-bar {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  gap: 10px;
 }
 
 .viewer-section {
@@ -324,7 +344,7 @@ select {
   position: absolute;
   left: 18px;
   bottom: 18px;
-  width: min(360px, calc(100% - 36px));
+  width: min(380px, calc(100% - 36px));
   background: rgba(10, 18, 32, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
@@ -340,12 +360,10 @@ select {
   left: 12px;
   width: 32px;
   height: 32px;
-  border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   font-size: 20px;
-  cursor: pointer;
 }
 
 .overlay-badge {
@@ -377,6 +395,7 @@ select {
   color: #7dd3fc;
   font-weight: 700;
   margin-bottom: 10px;
+  line-height: 1.6;
 }
 
 #overlayDescription {
@@ -385,7 +404,14 @@ select {
   margin-bottom: 14px;
 }
 
-.overlay-link {
+.overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.overlay-link,
+.overlay-focus-btn {
   height: 42px;
   border-radius: 12px;
   text-decoration: none;
@@ -393,9 +419,16 @@ select {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+}
+
+.overlay-link {
   background: #1f2937;
   color: #fff;
-  width: 100%;
+}
+
+.overlay-focus-btn {
+  background: #38bdf8;
+  color: #0b1220;
 }
 
 @media (max-width: 960px) {
