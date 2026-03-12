@@ -1,0 +1,30 @@
+[
+  {
+    "name": "תל אביב",
+    "countryCode": "IL",
+    "aliases": ["תל אביב", "tel aviv"],
+    "lat": 32.0853,
+    "lng": 34.7818
+  },
+  {
+    "name": "רעננה",
+    "countryCode": "IL",
+    "aliases": ["רעננה", "raanana", "ra'anana"],
+    "lat": 32.1848,
+    "lng": 34.8713
+  },
+  {
+    "name": "ניו יורק",
+    "countryCode": "US",
+    "aliases": ["ניו יורק", "new york", "nyc"],
+    "lat": 40.7128,
+    "lng": -74.006
+  },
+  {
+    "name": "פריז",
+    "countryCode": "FR",
+    "aliases": ["פריז", "paris"],
+    "lat": 48.8566,
+    "lng": 2.3522
+  }
+]
