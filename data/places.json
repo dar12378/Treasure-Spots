@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "name": "גן העצמאות",
+    "city": "תל אביב",
+    "countryCode": "IL",
+    "street": "רחוב הירקון",
+    "houseNumber": "272",
+    "lat": 32.0894,
+    "lng": 34.7701,
+    "category": "popular"
+  },
+  {
+    "id": 2,
+    "name": "פארק רעננה",
+    "city": "רעננה",
+    "countryCode": "IL",
+    "street": "רחוב ויצמן",
+    "houseNumber": "189",
+    "lat": 32.191,
+    "lng": 34.8568,
+    "category": "popular"
+  },
+  {
+    "id": 3,
+    "name": "לובר",
+    "city": "פריז",
+    "countryCode": "FR",
+    "street": "Rue de Rivoli",
+    "houseNumber": "99",
+    "lat": 48.8606,
+    "lng": 2.3376,
+    "category": "popular"
+  }
+]
