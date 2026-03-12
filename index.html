@@ -16,7 +16,7 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה וחיפוש חכם</p>
+        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה, חיפוש חכם ומסלול הליכה</p>
       </div>
 
       <div class="card search-card">
@@ -26,7 +26,7 @@
           <input
             id="searchInput"
             type="text"
-            placeholder="חפש מדינה, עיר, שכונה, רחוב, מקום או סגנון..."
+            placeholder="חפש מדינה, עיר, שכונה, רחוב, מספר בית, מקום או סגנון..."
             autocomplete="off"
           />
           <div id="searchSuggestions" class="search-suggestions hidden"></div>
@@ -56,6 +56,27 @@
           <option value="">בחר עיר</option>
         </select>
 
+        <label for="homeAddressInput">איפה אתה גר</label>
+        <input
+          id="homeAddressInput"
+          type="text"
+          placeholder="למשל רעננה, רחוב אחוזה 124"
+        />
+
+        <label for="streetInput">רחוב</label>
+        <input
+          id="streetInput"
+          type="text"
+          placeholder="למשל אחוזה"
+        />
+
+        <label for="houseNumberInput">מספר בית</label>
+        <input
+          id="houseNumberInput"
+          type="text"
+          placeholder="למשל 124"
+        />
+
         <label for="styleSelect">סגנון</label>
         <select id="styleSelect">
           <option value="">הכל</option>
@@ -69,6 +90,7 @@
         />
 
         <button id="filterSearchBtn" class="primary-btn">חפש לפי סינון</button>
+        <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
         <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
       </div>
 
