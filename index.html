@@ -4,9 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Treasure Spots</title>
 
   <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
@@ -57,6 +60,9 @@
         <label for="homeAddressInput">איפה אתה גר</label>
         <input id="homeAddressInput" type="text" placeholder="למשל רעננה, אחוזה 124" />
 
+        <label for="viaAddressInput">עבור דרך</label>
+        <input id="viaAddressInput" type="text" placeholder="למשל פארק רעננה / אחוזה / קניון" />
+
         <label for="neighborhoodInput">שכונה</label>
         <input id="neighborhoodInput" type="text" placeholder="למשל מרכז העיר / הצפון הישן" />
 
@@ -75,8 +81,13 @@
         <input id="customStyleInput" type="text" placeholder="למשל שקט, יוקרתי, צילום..." />
 
         <button id="filterSearchBtn" class="primary-btn">חפש לפי סינון</button>
-        <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
         <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
+      </div>
+
+      <div class="card route-card">
+        <h2>תכנון מסלול הליכה</h2>
+        <p class="route-help">בחר יעד, כתוב מאיפה אתה יוצא, ואם תרצה גם "עבור דרך".</p>
+        <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
       </div>
 
       <div class="card premium-card">
