@@ -1,167 +1,581 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0f172a" />
-  <title>Treasure Spots</title>
+const allCountries = [
+  "ישראל",
+  "ארצות הברית",
+  "צרפת",
+  "בריטניה",
+  "ספרד",
+  "פורטוגל",
+  "איטליה",
+  "גרמניה",
+  "הולנד",
+  "יפן",
+  "יוון",
+  "תאילנד",
+  "איחוד האמירויות"
+];
 
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
-</head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand-block">
-        <h1>Treasure Spots</h1>
-        <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה, חיפוש חכם ומסלול הליכה</p>
-      </div>
+const allStyles = [
+  "טבע",
+  "אוכל",
+  "נוף",
+  "אמנות",
+  "היסטוריה",
+  "משפחה",
+  "לילה",
+  "רומנטי",
+  "יוקרתי",
+  "שקט",
+  "צילום",
+  "מקומי",
+  "צעיר",
+  "קניות",
+  "חופים",
+  "תרבות",
+  "מוזיאונים",
+  "אדריכלות",
+  "טיול רגלי",
+  "נוף עירוני",
+  "פנורמי",
+  "קולינרי",
+  "אינסטגרמי",
+  "אווירה",
+  "טבע עירוני",
+  "בילוי",
+  "מוזיקה",
+  "שווקים",
+  "עתיק",
+  "הרפתקאות",
+  "קניונים",
+  "בתי קפה",
+  "מרכז מסחרי"
+];
 
-      <div class="card search-card">
-        <h2>חיפוש חכם</h2>
+const countryCities = {
+  "ישראל": [
+    "אילת","אריאל","אשדוד","אשקלון","באר שבע","בית שמש","בני ברק","בת ים","גבעתיים","הוד השרון",
+    "הרצליה","חדרה","חולון","חיפה","טבריה","יבנה","יהוד","ירושלים","כפר סבא","כרמיאל","לוד",
+    "מודיעין","נהריה","נס ציונה","נתניה","עכו","עפולה","פתח תקווה","צפת","קריית אונו","קריית גת",
+    "קריית שמונה","ראש העין","ראשון לציון","רחובות","רמלה","רמת גן","רמת השרון","רעננה","שדרות","תל אביב","יפו"
+  ],
+  "ארצות הברית": ["ניו יורק","לוס אנג'לס","שיקגו","סן פרנסיסקו","מיאמי","בוסטון","סיאטל"],
+  "צרפת": ["פריז","ליון","ניס"],
+  "בריטניה": ["לונדון","מנצ'סטר"],
+  "ספרד": ["ברצלונה","מדריד"],
+  "פורטוגל": ["ליסבון","פורטו"],
+  "איטליה": ["רומא","מילאנו"],
+  "גרמניה": ["ברלין","מינכן"],
+  "הולנד": ["אמסטרדם"],
+  "יפן": ["טוקיו","קיוטו","אוסקה"],
+  "יוון": ["אתונה"],
+  "תאילנד": ["בנגקוק"],
+  "איחוד האמירויות": ["דובאי"]
+};
 
-        <div class="smart-search-wrap">
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="חפש מדינה, עיר, שכונה, רחוב, מספר בית, מקום או סגנון..."
-            autocomplete="off"
-          />
-          <div id="searchSuggestions" class="search-suggestions hidden"></div>
-        </div>
-
-        <button id="searchBtn" class="primary-btn">🔍 חפש</button>
-      </div>
-
-      <div class="card">
-        <h2>תצוגה</h2>
-        <div class="view-switch">
-          <button id="showGlobeBtn" class="view-btn active">גלובוס</button>
-          <button id="showMapBtn" class="view-btn">מפה</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>סינון</h2>
-
-        <label for="countrySelect">מדינה</label>
-        <select id="countrySelect">
-          <option value="">בחר מדינה</option>
-        </select>
-
-        <label for="citySelect">עיר</label>
-        <select id="citySelect" disabled>
-          <option value="">בחר עיר</option>
-        </select>
-
-        <label for="homeAddressInput">איפה אתה גר</label>
-        <input
-          id="homeAddressInput"
-          type="text"
-          placeholder="למשל רעננה, רחוב אחוזה 124"
-        />
-
-        <label for="streetInput">רחוב</label>
-        <input
-          id="streetInput"
-          type="text"
-          placeholder="למשל אחוזה"
-        />
-
-        <label for="houseNumberInput">מספר בית</label>
-        <input
-          id="houseNumberInput"
-          type="text"
-          placeholder="למשל 124"
-        />
-
-        <label for="styleSelect">סגנון</label>
-        <select id="styleSelect">
-          <option value="">הכל</option>
-        </select>
-
-        <label for="customStyleInput">סגנון משלך</label>
-        <input
-          id="customStyleInput"
-          type="text"
-          placeholder="למשל שקט, יוקרתי, צילום..."
-        />
-
-        <button id="filterSearchBtn" class="primary-btn">חפש לפי סינון</button>
-        <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
-        <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
-      </div>
-
-      <div class="card premium-card">
-        <h2>Premium - תכנון חופשה</h2>
-
-        <label for="tripBudget">תקציב בדולר</label>
-        <input id="tripBudget" type="number" placeholder="למשל 1500" />
-
-        <label for="tripDays">מספר ימים</label>
-        <input id="tripDays" type="number" placeholder="למשל 5" />
-
-        <label for="tripStyle">סגנון חופשה</label>
-        <select id="tripStyle">
-          <option value="">בחר סגנון</option>
-        </select>
-
-        <label for="tripCustomStyle">סגנון אישי</label>
-        <input
-          id="tripCustomStyle"
-          type="text"
-          placeholder="למשל רגוע, רומנטי, אוכל טוב..."
-        />
-
-        <label for="tripHotelLevel">רמת מלון</label>
-        <select id="tripHotelLevel">
-          <option value="">בחר רמת מלון</option>
-          <option value="3 כוכבים">3 כוכבים</option>
-          <option value="4 כוכבים">4 כוכבים</option>
-          <option value="5 כוכבים">5 כוכבים</option>
-          <option value="בוטיק">בוטיק</option>
-          <option value="יוקרתי">יוקרתי</option>
-        </select>
-
-        <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
-        <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
-      </div>
-
-      <div class="card">
-        <div class="places-header">
-          <h2>מקומות</h2>
-          <span id="resultsCount">0</span>
-        </div>
-
-        <div id="placesList" class="places-list"></div>
-        <p id="emptyPlacesMessage" class="empty-message">
-          בחר מדינה ועיר או חפש יעד.
-        </p>
-      </div>
-    </aside>
-
-    <main class="viewer-area">
-      <div id="globeSection" class="viewer-section"></div>
-      <div id="mapSection" class="viewer-section hidden"></div>
-
-      <div id="placeOverlay" class="place-overlay hidden">
-        <button id="closeOverlayBtn" class="overlay-close">×</button>
-        <div id="overlayBadge" class="overlay-badge">מומלץ</div>
-        <h3 id="overlayTitle"></h3>
-        <p id="overlayMeta"></p>
-        <p id="overlayDescription"></p>
-        <div class="overlay-actions">
-          <a id="overlaySourceBtn" class="overlay-link" href="#" target="_blank" rel="noopener noreferrer">למקור</a>
-          <button id="overlayFocusBtn" class="overlay-focus-btn">התמקד שוב</button>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="data.js"></script>
-  <script src="script.js"></script>
-</body>
-</html>
+const placesData = [
+  {
+    id: 1,
+    nameHe: "גן העצמאות",
+    nameEn: "Independence Park",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "תל אביב",
+    cityAliases: ["תל אביב","tel aviv"],
+    neighborhood: "הצפון הישן",
+    neighborhoodAliases: ["הצפון הישן","old north"],
+    street: "רחוב הירקון",
+    streetAliases: ["הירקון","hayarkon"],
+    houseNumber: "272",
+    category: "popular",
+    styles: ["טבע","נוף","משפחה","שקט","טיול רגלי"],
+    descriptionHe: "פארק עירוני עם תצפית לים.",
+    lat: 32.0894,
+    lng: 34.7701,
+    timezone: "Asia/Jerusalem",
+    interestScore: 92,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.tel-aviv.gov.il"
+  },
+  {
+    id: 2,
+    nameHe: "נמל תל אביב",
+    nameEn: "Tel Aviv Port",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "תל אביב",
+    cityAliases: ["תל אביב","tel aviv"],
+    neighborhood: "נמל תל אביב",
+    neighborhoodAliases: ["נמל תל אביב","tel aviv port"],
+    street: "רחוב הנמל",
+    streetAliases: ["הנמל","hanamal"],
+    houseNumber: "1",
+    category: "popular",
+    styles: ["אוכל","בילוי","נוף","לילה","קניות","מרכז מסחרי"],
+    descriptionHe: "אזור חוף תוסס עם מסעדות, חנויות וטיילת.",
+    lat: 32.0984,
+    lng: 34.7744,
+    timezone: "Asia/Jerusalem",
+    interestScore: 94,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.tel-aviv.gov.il"
+  },
+  {
+    id: 3,
+    nameHe: "שרונה מרקט",
+    nameEn: "Sarona Market",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "תל אביב",
+    cityAliases: ["תל אביב","tel aviv"],
+    neighborhood: "שרונה",
+    neighborhoodAliases: ["שרונה","sarona"],
+    street: "דרך מנחם בגין",
+    streetAliases: ["מנחם בגין","begin road"],
+    houseNumber: "121",
+    category: "popular",
+    styles: ["אוכל","קניות","צעיר","מרכז מסחרי","בתי קפה"],
+    descriptionHe: "מתחם אוכל, שופינג ובילוי בלב העיר.",
+    lat: 32.0716,
+    lng: 34.7872,
+    timezone: "Asia/Jerusalem",
+    interestScore: 91,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.saronamarket.co.il"
+  },
+  {
+    id: 4,
+    nameHe: "שוק הפשפשים",
+    nameEn: "Jaffa Flea Market",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "יפו",
+    cityAliases: ["יפו","jaffa","yafo"],
+    neighborhood: "שוק הפשפשים",
+    neighborhoodAliases: ["שוק הפשפשים","flea market"],
+    street: "רחוב עולי ציון",
+    streetAliases: ["עולי ציון","olei zion"],
+    houseNumber: "13",
+    category: "popular",
+    styles: ["אוכל","היסטוריה","שווקים","מקומי","לילה","בתי קפה"],
+    descriptionHe: "אזור היסטורי עם מסעדות, ברים וחנויות מיוחדות.",
+    lat: 32.0544,
+    lng: 34.7562,
+    timezone: "Asia/Jerusalem",
+    interestScore: 95,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.visit-tel-aviv.com"
+  },
+  {
+    id: 5,
+    nameHe: "גן סאקר",
+    nameEn: "Sacher Park",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "ירושלים",
+    cityAliases: ["ירושלים","jerusalem"],
+    neighborhood: "מרכז העיר",
+    neighborhoodAliases: ["מרכז העיר","city center"],
+    street: "שדרות בן צבי",
+    streetAliases: ["בן צבי","ben zvi"],
+    houseNumber: "1",
+    category: "recommended",
+    styles: ["טבע","משפחה","שקט","טיול רגלי"],
+    descriptionHe: "פארק גדול ונעים במרכז העיר.",
+    lat: 31.7784,
+    lng: 35.2057,
+    timezone: "Asia/Jerusalem",
+    interestScore: 84,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.itraveljerusalem.com"
+  },
+  {
+    id: 6,
+    nameHe: "ממילא",
+    nameEn: "Mamilla Mall",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "ירושלים",
+    cityAliases: ["ירושלים","jerusalem"],
+    neighborhood: "ממילא",
+    neighborhoodAliases: ["ממילא","mamilla"],
+    street: "שדרות ממילא",
+    streetAliases: ["mamilla avenue"],
+    houseNumber: "8",
+    category: "popular",
+    styles: ["קניות","אוכל","קניונים","מרכז מסחרי","יוקרתי"],
+    descriptionHe: "שדרת קניות יוקרתית ליד העיר העתיקה.",
+    lat: 31.7787,
+    lng: 35.2236,
+    timezone: "Asia/Jerusalem",
+    interestScore: 89,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.alrov.co.il/mamilla"
+  },
+  {
+    id: 7,
+    nameHe: "טיילת לואי",
+    nameEn: "Louis Promenade",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "חיפה",
+    cityAliases: ["חיפה","haifa"],
+    neighborhood: "הכרמל",
+    neighborhoodAliases: ["הכרמל","carmel"],
+    street: "שדרות הנשיא",
+    streetAliases: ["שדרות הנשיא","hanasi"],
+    houseNumber: "75",
+    category: "popular",
+    styles: ["נוף","צילום","רומנטי","פנורמי","טיול רגלי"],
+    descriptionHe: "טיילת עם נוף מרשים של מפרץ חיפה.",
+    lat: 32.8183,
+    lng: 34.9817,
+    timezone: "Asia/Jerusalem",
+    interestScore: 88,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.visit-haifa.org"
+  },
+  {
+    id: 8,
+    nameHe: "הגנים הבהאיים",
+    nameEn: "Bahai Gardens",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "חיפה",
+    cityAliases: ["חיפה","haifa"],
+    neighborhood: "הכרמל",
+    neighborhoodAliases: ["הכרמל","carmel"],
+    street: "שדרות הציונות",
+    streetAliases: ["הציונות","zionut"],
+    houseNumber: "80",
+    category: "popular",
+    styles: ["טבע","צילום","פנורמי","תרבות"],
+    descriptionHe: "אחד האתרים היפים בישראל.",
+    lat: 32.8147,
+    lng: 34.9896,
+    timezone: "Asia/Jerusalem",
+    interestScore: 93,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.ganbahai.org.il"
+  },
+  {
+    id: 9,
+    nameHe: "פארק רעננה",
+    nameEn: "Raanana Park",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "רעננה",
+    cityAliases: ["רעננה","raanana","ra'anana"],
+    neighborhood: "מערב רעננה",
+    neighborhoodAliases: ["מערב רעננה","west raanana"],
+    street: "רחוב ויצמן",
+    streetAliases: ["ויצמן","weizmann"],
+    houseNumber: "189",
+    category: "popular",
+    styles: ["טבע","משפחה","שקט","טיול רגלי"],
+    descriptionHe: "פארק גדול ומטופח ברעננה.",
+    lat: 32.1910,
+    lng: 34.8568,
+    timezone: "Asia/Jerusalem",
+    interestScore: 82,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.raanana.muni.il"
+  },
+  {
+    id: 10,
+    nameHe: "רחוב אחוזה",
+    nameEn: "Ahuza Street",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "רעננה",
+    cityAliases: ["רעננה","raanana","ra'anana"],
+    neighborhood: "מרכז רעננה",
+    neighborhoodAliases: ["מרכז רעננה","central raanana"],
+    street: "רחוב אחוזה",
+    streetAliases: ["אחוזה","ahuza"],
+    houseNumber: "124",
+    category: "recommended",
+    styles: ["קניות","אוכל","מקומי","אווירה","בתי קפה","מרכז מסחרי"],
+    descriptionHe: "הרחוב המרכזי של רעננה עם בתי קפה, חנויות ואווירה מקומית.",
+    lat: 32.1844,
+    lng: 34.8713,
+    timezone: "Asia/Jerusalem",
+    interestScore: 80,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.raanana.muni.il"
+  },
+  {
+    id: 11,
+    nameHe: "קניון רננים",
+    nameEn: "Renanim Mall",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "רעננה",
+    cityAliases: ["רעננה","raanana","ra'anana"],
+    neighborhood: "מזרח רעננה",
+    neighborhoodAliases: ["מזרח רעננה","east raanana"],
+    street: "רחוב המלאכה",
+    streetAliases: ["המלאכה","hamelacha"],
+    houseNumber: "2",
+    category: "popular",
+    styles: ["קניות","קניונים","מרכז מסחרי","משפחה"],
+    descriptionHe: "קניון מרכזי ברעננה.",
+    lat: 32.1775,
+    lng: 34.8898,
+    timezone: "Asia/Jerusalem",
+    interestScore: 78,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.renanim.co.il"
+  },
+  {
+    id: 12,
+    nameHe: "קניון שבעת הכוכבים",
+    nameEn: "Seven Stars Mall",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "הרצליה",
+    cityAliases: ["הרצליה","herzliya"],
+    neighborhood: "מרכז הרצליה",
+    neighborhoodAliases: ["מרכז הרצליה","central herzliya"],
+    street: "שבעת הכוכבים",
+    streetAliases: ["שבעת הכוכבים","shiv'at hakochavim"],
+    houseNumber: "8",
+    category: "popular",
+    styles: ["קניונים","קניות","מרכז מסחרי","משפחה"],
+    descriptionHe: "קניון מרכזי ופופולרי בהרצליה.",
+    lat: 32.1669,
+    lng: 34.8257,
+    timezone: "Asia/Jerusalem",
+    interestScore: 79,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://7star.co.il"
+  },
+  {
+    id: 13,
+    nameHe: "הפארק הלאומי",
+    nameEn: "National Park Ramat Gan",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "רמת גן",
+    cityAliases: ["רמת גן","ramat gan"],
+    neighborhood: "רמת גן",
+    neighborhoodAliases: ["רמת גן","ramat gan"],
+    street: "שדרות הצבי",
+    streetAliases: ["הצבי","hatzvi"],
+    houseNumber: "1",
+    category: "popular",
+    styles: ["טבע","משפחה","טיול רגלי","שקט"],
+    descriptionHe: "פארק גדול עם אגם ושבילים.",
+    lat: 32.0470,
+    lng: 34.8266,
+    timezone: "Asia/Jerusalem",
+    interestScore: 86,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.ramat-gan.muni.il"
+  },
+  {
+    id: 14,
+    nameHe: "פארק כפר סבא",
+    nameEn: "Kfar Saba Park",
+    country: "ישראל",
+    countryAliases: ["ישראל","israel"],
+    city: "כפר סבא",
+    cityAliases: ["כפר סבא","kfar saba"],
+    neighborhood: "מערב כפר סבא",
+    neighborhoodAliases: ["מערב כפר סבא","west kfar saba"],
+    street: "בן יהודה",
+    streetAliases: ["בן יהודה","ben yehuda"],
+    houseNumber: "73",
+    category: "popular",
+    styles: ["טבע","משפחה","שקט","טיול רגלי"],
+    descriptionHe: "פארק עירוני גדול ונעים.",
+    lat: 32.1812,
+    lng: 34.9078,
+    timezone: "Asia/Jerusalem",
+    interestScore: 81,
+    estimatedFlightUsd: 650,
+    sourceUrl: "https://www.kfar-saba.muni.il"
+  },
+  {
+    id: 15,
+    nameHe: "סנטרל פארק",
+    nameEn: "Central Park",
+    country: "ארצות הברית",
+    countryAliases: ["ארצות הברית","usa","united states","america","ארהב","ארה\"ב"],
+    city: "ניו יורק",
+    cityAliases: ["ניו יורק","new york","nyc"],
+    neighborhood: "מנהטן",
+    neighborhoodAliases: ["מנהטן","manhattan"],
+    street: "5th Avenue",
+    streetAliases: ["5th avenue","fifth avenue"],
+    houseNumber: "59",
+    category: "popular",
+    styles: ["טבע","משפחה","נוף","טיול רגלי","צילום"],
+    descriptionHe: "הפארק המפורסם בלב מנהטן.",
+    lat: 40.7829,
+    lng: -73.9654,
+    timezone: "America/New_York",
+    interestScore: 98,
+    estimatedFlightUsd: 980,
+    sourceUrl: "https://www.centralparknyc.org"
+  },
+  {
+    id: 16,
+    nameHe: "טיימס סקוור",
+    nameEn: "Times Square",
+    country: "ארצות הברית",
+    countryAliases: ["ארצות הברית","usa","united states","america"],
+    city: "ניו יורק",
+    cityAliases: ["ניו יורק","new york","nyc"],
+    neighborhood: "מידטאון",
+    neighborhoodAliases: ["מידטאון","midtown"],
+    street: "Broadway",
+    streetAliases: ["broadway"],
+    houseNumber: "1560",
+    category: "popular",
+    styles: ["לילה","צעיר","נוף עירוני","בילוי"],
+    descriptionHe: "לב האורות של מנהטן.",
+    lat: 40.7580,
+    lng: -73.9855,
+    timezone: "America/New_York",
+    interestScore: 96,
+    estimatedFlightUsd: 980,
+    sourceUrl: "https://www.timessquarenyc.org"
+  },
+  {
+    id: 17,
+    nameHe: "לובר",
+    nameEn: "Louvre Museum",
+    country: "צרפת",
+    countryAliases: ["צרפת","france"],
+    city: "פריז",
+    cityAliases: ["פריז","paris"],
+    neighborhood: "הרובע הראשון",
+    neighborhoodAliases: ["הרובע הראשון","1st arrondissement"],
+    street: "Rue de Rivoli",
+    streetAliases: ["rue de rivoli"],
+    houseNumber: "99",
+    category: "popular",
+    styles: ["אמנות","היסטוריה","מוזיאונים","תרבות"],
+    descriptionHe: "אחד המוזיאונים המפורסמים בעולם.",
+    lat: 48.8606,
+    lng: 2.3376,
+    timezone: "Europe/Paris",
+    interestScore: 99,
+    estimatedFlightUsd: 720,
+    sourceUrl: "https://www.louvre.fr"
+  },
+  {
+    id: 18,
+    nameHe: "מגדל אייפל",
+    nameEn: "Eiffel Tower",
+    country: "צרפת",
+    countryAliases: ["צרפת","france"],
+    city: "פריז",
+    cityAliases: ["פריז","paris"],
+    neighborhood: "שאן דה מארס",
+    neighborhoodAliases: ["champs de mars"],
+    street: "Avenue Gustave Eiffel",
+    streetAliases: ["gustave eiffel"],
+    houseNumber: "5",
+    category: "popular",
+    styles: ["נוף","רומנטי","צילום","פנורמי"],
+    descriptionHe: "הסמל המפורסם של פריז.",
+    lat: 48.8584,
+    lng: 2.2945,
+    timezone: "Europe/Paris",
+    interestScore: 100,
+    estimatedFlightUsd: 720,
+    sourceUrl: "https://www.toureiffel.paris"
+  },
+  {
+    id: 19,
+    nameHe: "שיבויה קרוסינג",
+    nameEn: "Shibuya Crossing",
+    country: "יפן",
+    countryAliases: ["יפן","japan"],
+    city: "טוקיו",
+    cityAliases: ["טוקיו","tokyo"],
+    neighborhood: "שיבויה",
+    neighborhoodAliases: ["שיבויה","shibuya"],
+    street: "Shibuya Station",
+    streetAliases: ["shibuya station"],
+    houseNumber: "1",
+    category: "popular",
+    styles: ["נוף עירוני","צעיר","לילה","צילום","בילוי"],
+    descriptionHe: "אחת הצמתים הכי מפורסמות בעולם.",
+    lat: 35.6595,
+    lng: 139.7005,
+    timezone: "Asia/Tokyo",
+    interestScore: 97,
+    estimatedFlightUsd: 1250,
+    sourceUrl: "https://www.gotokyo.org"
+  },
+  {
+    id: 20,
+    nameHe: "שינג'וקו גיואן",
+    nameEn: "Shinjuku Gyoen",
+    country: "יפן",
+    countryAliases: ["יפן","japan"],
+    city: "טוקיו",
+    cityAliases: ["טוקיו","tokyo"],
+    neighborhood: "שינג'וקו",
+    neighborhoodAliases: ["שינג'וקו","shinjuku"],
+    street: "Naitomachi",
+    streetAliases: ["naitomachi"],
+    houseNumber: "11",
+    category: "recommended",
+    styles: ["טבע","שקט","צילום","טיול רגלי"],
+    descriptionHe: "פארק גדול ויפה בלב טוקיו.",
+    lat: 35.6852,
+    lng: 139.7100,
+    timezone: "Asia/Tokyo",
+    interestScore: 90,
+    estimatedFlightUsd: 1250,
+    sourceUrl: "https://www.env.go.jp/garden/shinjukugyoen/english"
+  },
+  {
+    id: 21,
+    nameHe: "שיבויה היקאריה",
+    nameEn: "Shibuya Hikarie",
+    country: "יפן",
+    countryAliases: ["יפן","japan"],
+    city: "טוקיו",
+    cityAliases: ["טוקיו","tokyo"],
+    neighborhood: "שיבויה",
+    neighborhoodAliases: ["שיבויה","shibuya"],
+    street: "Shibuya",
+    streetAliases: ["shibuya"],
+    houseNumber: "2-21-1",
+    category: "popular",
+    styles: ["קניות","קניונים","מרכז מסחרי","צעיר"],
+    descriptionHe: "מרכז קניות מודרני בשיבויה.",
+    lat: 35.6590,
+    lng: 139.7036,
+    timezone: "Asia/Tokyo",
+    interestScore: 84,
+    estimatedFlightUsd: 1250,
+    sourceUrl: "https://www.hikarie.jp"
+  },
+  {
+    id: 22,
+    nameHe: "אוקספורד סטריט",
+    nameEn: "Oxford Street",
+    country: "בריטניה",
+    countryAliases: ["בריטניה","uk","united kingdom"],
+    city: "לונדון",
+    cityAliases: ["לונדון","london"],
+    neighborhood: "ווסט אנד",
+    neighborhoodAliases: ["west end"],
+    street: "Oxford Street",
+    streetAliases: ["oxford street"],
+    houseNumber: "300",
+    category: "popular",
+    styles: ["קניות","מרכז מסחרי","צעיר"],
+    descriptionHe: "רחוב הקניות המפורסם בלונדון.",
+    lat: 51.5154,
+    lng: -0.1410,
+    timezone: "Europe/London",
+    interestScore: 90,
+    estimatedFlightUsd: 760,
+    sourceUrl: "https://www.visitlondon.com"
+  }
+];
