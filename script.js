@@ -49,7 +49,12 @@ function normalizeText(text) {
   return String(text || "")
     .trim()
     .toLowerCase()
-    .replace(/["']/g, "");
+    .replace(/["'`´]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function includesNormalized(text, query) {
+  return normalizeText(text).includes(normalizeText(query));
 }
 
 function getLocalTime(timezone) {
@@ -118,6 +123,33 @@ function populateStyles() {
   });
 }
 
+function getPlaceSearchScore(place, query) {
+  const q = normalizeText(query);
+  if (!q) return 0;
+
+  let score = 0;
+
+  if (includesNormalized(place.nameHe, q)) score += 120;
+  if (includesNormalized(place.nameEn, q)) score += 110;
+
+  if (normalizeText(place.nameHe) === q) score += 80;
+  if (normalizeText(place.nameEn) === q) score += 75;
+
+  if (includesNormalized(place.city, q)) score += 90;
+  if ((place.cityAliases || []).some((alias) => includesNormalized(alias, q))) score += 85;
+
+  if (includesNormalized(place.country, q)) score += 70;
+  if ((place.countryAliases || []).some((alias) => includesNormalized(alias, q))) score += 65;
+
+  if ((place.styles || []).some((style) => includesNormalized(style, q))) score += 55;
+
+  if (includesNormalized(place.descriptionHe, q)) score += 20;
+
+  score += (place.interestScore || 0) / 20;
+
+  return score;
+}
+
 function scorePlace(place) {
   let score = place.interestScore || 0;
 
@@ -128,7 +160,10 @@ function scorePlace(place) {
   if (customStyle) {
     const normalizedCustom = normalizeText(customStyle);
     const styleMatch = place.styles.some((style) => normalizeText(style).includes(normalizedCustom));
-    const textMatch = normalizeText(place.descriptionHe).includes(normalizedCustom);
+    const textMatch =
+      normalizeText(place.descriptionHe).includes(normalizedCustom) ||
+      normalizeText(place.nameHe).includes(normalizedCustom);
+
     if (styleMatch || textMatch) {
       score += 25;
     }
@@ -150,9 +185,9 @@ function getFilteredPlaces() {
 
       const customStyleMatch = customStyle
         ? (
-            place.styles.some((style) => normalizeText(style).includes(normalizeText(customStyle))) ||
-            normalizeText(place.descriptionHe).includes(normalizeText(customStyle)) ||
-            normalizeText(place.nameHe).includes(normalizeText(customStyle))
+            place.styles.some((style) => includesNormalized(style, customStyle)) ||
+            includesNormalized(place.descriptionHe, customStyle) ||
+            includesNormalized(place.nameHe, customStyle)
           )
         : true;
 
@@ -165,15 +200,29 @@ function getFilteredPlaces() {
         ...(place.cityAliases || []),
         ...(place.styles || []),
         place.descriptionHe
-      ]
-        .join(" ")
-        .toLowerCase();
+      ].join(" ");
 
-      const searchMatch = searchTerm ? textBlob.includes(searchTerm.toLowerCase()) : true;
+      const searchMatch = searchTerm ? includesNormalized(textBlob, searchTerm) : true;
 
       return countryMatch && cityMatch && styleMatch && customStyleMatch && searchMatch;
     })
     .sort((a, b) => scorePlace(b) - scorePlace(a));
+}
+
+function getTopPlaceForCity(country, city) {
+  const cityPlaces = placesData
+    .filter((place) => place.country === country && place.city === city)
+    .sort((a, b) => b.interestScore - a.interestScore);
+
+  return cityPlaces[0] || null;
+}
+
+function getTopPlaceForCountry(country) {
+  const countryPlaces = placesData
+    .filter((place) => place.country === country)
+    .sort((a, b) => b.interestScore - a.interestScore);
+
+  return countryPlaces[0] || null;
 }
 
 function buildSuggestions(query) {
@@ -183,55 +232,54 @@ function buildSuggestions(query) {
   const suggestions = [];
 
   allCountries.forEach((country) => {
-    if (normalizeText(country).includes(q)) {
+    if (includesNormalized(country, q)) {
       suggestions.push({
         type: "country",
         title: country,
         meta: "מדינה",
-        country
+        country,
+        priority: 40
       });
     }
   });
 
   Object.entries(countryCities).forEach(([country, cities]) => {
     cities.forEach((city) => {
-      if (normalizeText(city).includes(q)) {
+      if (includesNormalized(city, q)) {
         suggestions.push({
           type: "city",
           title: city,
           meta: `עיר • ${country}`,
           country,
-          city
+          city,
+          priority: 60
         });
       }
     });
   });
 
   allStyles.forEach((style) => {
-    if (normalizeText(style).includes(q)) {
+    if (includesNormalized(style, q)) {
       suggestions.push({
         type: "style",
         title: style,
-        meta: "סגנון"
+        meta: "סגנון",
+        style,
+        priority: 30
       });
     }
   });
 
   placesData.forEach((place) => {
-    const match =
-      normalizeText(place.nameHe).includes(q) ||
-      normalizeText(place.nameEn).includes(q) ||
-      normalizeText(place.city).includes(q) ||
-      (place.cityAliases || []).some((alias) => normalizeText(alias).includes(q)) ||
-      (place.countryAliases || []).some((alias) => normalizeText(alias).includes(q)) ||
-      (place.styles || []).some((style) => normalizeText(style).includes(q));
+    const placeScore = getPlaceSearchScore(place, q);
 
-    if (match) {
+    if (placeScore > 0) {
       suggestions.push({
         type: "place",
         title: place.nameHe,
         meta: `${place.city}, ${place.country}`,
-        placeId: place.id
+        placeId: place.id,
+        priority: placeScore + 100
       });
     }
   });
@@ -239,15 +287,17 @@ function buildSuggestions(query) {
   const unique = [];
   const seen = new Set();
 
-  suggestions.forEach((item) => {
-    const key = `${item.type}-${item.title}-${item.meta}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
-    }
-  });
+  suggestions
+    .sort((a, b) => b.priority - a.priority)
+    .forEach((item) => {
+      const key = `${item.type}-${item.title}-${item.meta}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(item);
+      }
+    });
 
-  return unique.slice(0, 8);
+  return unique.slice(0, 10);
 }
 
 function renderSuggestions(query) {
@@ -286,8 +336,14 @@ function applySuggestion(item) {
     populateCities(selectedCountry);
     citySelect.value = "";
     searchInput.value = item.title;
-    searchTerm = item.title;
+    searchTerm = "";
+
     renderAll();
+
+    const topPlace = getTopPlaceForCountry(selectedCountry);
+    if (topPlace) {
+      openPlace(topPlace.id, true);
+    }
     return;
   }
 
@@ -298,14 +354,20 @@ function applySuggestion(item) {
     populateCities(selectedCountry);
     citySelect.value = selectedCity;
     searchInput.value = item.title;
-    searchTerm = item.title;
+    searchTerm = "";
+
     renderAll();
+
+    const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
+    if (topPlace) {
+      openPlace(topPlace.id, true);
+    }
     return;
   }
 
   if (item.type === "style") {
-    selectedStyle = item.title;
-    styleSelect.value = item.title;
+    selectedStyle = item.style;
+    styleSelect.value = item.style;
     searchInput.value = item.title;
     searchTerm = "";
     renderAll();
@@ -323,6 +385,7 @@ function applySuggestion(item) {
     citySelect.value = selectedCity;
     searchInput.value = place.nameHe;
     searchTerm = place.nameHe;
+
     renderAll();
     openPlace(place.id, true);
   }
@@ -332,15 +395,18 @@ function findBestSearchMatch(query) {
   const q = normalizeText(query);
   if (!q) return null;
 
-  return (
-    placesData.find((place) => normalizeText(place.nameHe).includes(q)) ||
-    placesData.find((place) => normalizeText(place.nameEn).includes(q)) ||
-    placesData.find((place) => normalizeText(place.city).includes(q)) ||
-    placesData.find((place) => (place.cityAliases || []).some((alias) => normalizeText(alias).includes(q))) ||
-    placesData.find((place) => (place.countryAliases || []).some((alias) => normalizeText(alias).includes(q))) ||
-    placesData.find((place) => (place.styles || []).some((style) => normalizeText(style).includes(q))) ||
-    null
-  );
+  let bestPlace = null;
+  let bestScore = -1;
+
+  placesData.forEach((place) => {
+    const score = getPlaceSearchScore(place, q);
+    if (score > bestScore) {
+      bestScore = score;
+      bestPlace = place;
+    }
+  });
+
+  return bestScore > 0 ? bestPlace : null;
 }
 
 function initGlobe() {
@@ -575,6 +641,63 @@ function renderAll() {
 
 function runSearch() {
   searchTerm = searchInput.value.trim();
+  const q = normalizeText(searchTerm);
+
+  if (!q) return;
+
+  const matchingCountry = allCountries.find((country) => includesNormalized(country, q));
+  if (matchingCountry) {
+    selectedCountry = matchingCountry;
+    selectedCity = "";
+    countrySelect.value = selectedCountry;
+    populateCities(selectedCountry);
+    citySelect.value = "";
+    renderAll();
+
+    const topPlace = getTopPlaceForCountry(selectedCountry);
+    if (topPlace) {
+      openPlace(topPlace.id, true);
+    }
+    searchSuggestions.classList.add("hidden");
+    return;
+  }
+
+  let matchingCity = null;
+  let matchingCityCountry = null;
+  Object.entries(countryCities).some(([country, cities]) => {
+    const city = cities.find((c) => includesNormalized(c, q));
+    if (city) {
+      matchingCity = city;
+      matchingCityCountry = country;
+      return true;
+    }
+    return false;
+  });
+
+  if (matchingCity && matchingCityCountry) {
+    selectedCountry = matchingCityCountry;
+    selectedCity = matchingCity;
+    countrySelect.value = selectedCountry;
+    populateCities(selectedCountry);
+    citySelect.value = selectedCity;
+    renderAll();
+
+    const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
+    if (topPlace) {
+      openPlace(topPlace.id, true);
+    }
+    searchSuggestions.classList.add("hidden");
+    return;
+  }
+
+  const matchingStyle = allStyles.find((style) => includesNormalized(style, q));
+  if (matchingStyle) {
+    selectedStyle = matchingStyle;
+    styleSelect.value = matchingStyle;
+    renderAll();
+    searchSuggestions.classList.add("hidden");
+    return;
+  }
 
   const target = findBestSearchMatch(searchTerm);
 
@@ -585,19 +708,6 @@ function runSearch() {
 
   selectedCountry = target.country;
   selectedCity = target.city;
-
-  if (
-    target.styles &&
-    target.styles.some((style) => normalizeText(style).includes(normalizeText(searchTerm)))
-  ) {
-    selectedStyle = target.styles.find((style) =>
-      normalizeText(style).includes(normalizeText(searchTerm))
-    ) || selectedStyle;
-    if (selectedStyle) {
-      styleSelect.value = selectedStyle;
-    }
-  }
-
   countrySelect.value = selectedCountry;
   populateCities(selectedCountry);
   citySelect.value = selectedCity;
@@ -630,12 +740,12 @@ function buildPremiumPlan() {
       if (!chosenStyle) return true;
 
       return (
-        place.styles.some((style) => normalizeText(style).includes(normalizeText(chosenStyle))) ||
-        normalizeText(place.descriptionHe).includes(normalizeText(chosenStyle))
+        place.styles.some((style) => includesNormalized(style, chosenStyle)) ||
+        includesNormalized(place.descriptionHe, chosenStyle)
       );
     })
     .sort((a, b) => b.interestScore - a.interestScore)
-    .slice(0, 3);
+    .slice(0, 4);
 
   if (!matchingPlaces.length) {
     premiumOutput.textContent = "לא נמצאו מספיק מקומות מתאימים לתוכנית.";
@@ -647,7 +757,7 @@ function buildPremiumPlan() {
     `סגנון: ${chosenStyle || "כללי"}. ` +
     `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
     `תקציב כולל: $${budget}. ` +
-    `בשלב הבא אפשר לחבר מנוע אמיתי שיבנה טיסות, מלון, מסלול יומי והמלצות מותאמות אישית.`;
+    `אפשר לשדרג בהמשך למערכת שבונה מסלול מלא עם טיסות, לינה ואטרקציות.`;
 }
 
 function resetAll() {
