@@ -874,3 +874,17 @@ populateStyles();
 initGlobe();
 initMap();
 renderAll();
+
+/* Service Worker - אופליין + התקנה כאפליקציה */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker
+      .register("sw.js")
+      .then(function (registration) {
+        console.log("Service Worker Registered:", registration);
+      })
+      .catch(function (error) {
+        console.log("Service Worker Registration Failed:", error);
+      });
+  });
+}
