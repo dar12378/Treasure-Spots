@@ -4,6 +4,7 @@ const styleSelect = document.getElementById("styleSelect");
 const customStyleInput = document.getElementById("customStyleInput");
 const streetInput = document.getElementById("streetInput");
 const houseNumberInput = document.getElementById("houseNumberInput");
+const neighborhoodInput = document.getElementById("neighborhoodInput");
 const homeAddressInput = document.getElementById("homeAddressInput");
 
 const searchInput = document.getElementById("searchInput");
@@ -46,6 +47,7 @@ let selectedStyle = "";
 let customStyle = "";
 let selectedStreet = "";
 let selectedHouseNumber = "";
+let selectedNeighborhood = "";
 let searchTerm = "";
 let activePlaceId = null;
 
@@ -67,18 +69,6 @@ function includesNormalized(text, query) {
   return normalizeText(text).includes(normalizeText(query));
 }
 
-function getLocalTime(timezone) {
-  try {
-    return new Intl.DateTimeFormat("he-IL", {
-      timeZone: timezone,
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(new Date());
-  } catch {
-    return "לא ידוע";
-  }
-}
-
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, (char) => {
     const map = {
@@ -90,6 +80,18 @@ function escapeHtml(text) {
     };
     return map[char];
   });
+}
+
+function getLocalTime(timezone) {
+  try {
+    return new Intl.DateTimeFormat("he-IL", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date());
+  } catch {
+    return "לא ידוע";
+  }
 }
 
 function populateCountries() {
@@ -137,18 +139,18 @@ function scorePlace(place) {
   let score = place.interestScore || 0;
 
   if (selectedStyle && place.styles.includes(selectedStyle)) {
-    score += 20;
+    score += 22;
   }
 
   if (customStyle) {
-    const styleMatch = place.styles.some((style) => includesNormalized(style, customStyle));
-    const textMatch =
+    const match =
+      place.styles.some((style) => includesNormalized(style, customStyle)) ||
       includesNormalized(place.descriptionHe, customStyle) ||
-      includesNormalized(place.nameHe, customStyle);
+      includesNormalized(place.nameHe, customStyle) ||
+      includesNormalized(place.street || "", customStyle) ||
+      includesNormalized(place.neighborhood || "", customStyle);
 
-    if (styleMatch || textMatch) {
-      score += 25;
-    }
+    if (match) score += 28;
   }
 
   if (place.category === "popular") {
@@ -158,12 +160,37 @@ function scorePlace(place) {
   return score;
 }
 
+function getTextBlob(place) {
+  return [
+    place.nameHe,
+    place.nameEn,
+    place.country,
+    place.city,
+    place.neighborhood || "",
+    place.street || "",
+    place.houseNumber || "",
+    ...(place.countryAliases || []),
+    ...(place.cityAliases || []),
+    ...(place.neighborhoodAliases || []),
+    ...(place.streetAliases || []),
+    ...(place.styles || []),
+    place.descriptionHe
+  ].join(" ");
+}
+
 function getFilteredPlaces() {
   return placesData
     .filter((place) => {
       const countryMatch = selectedCountry ? place.country === selectedCountry : true;
       const cityMatch = selectedCity ? place.city === selectedCity : true;
       const styleMatch = selectedStyle ? place.styles.includes(selectedStyle) : true;
+
+      const neighborhoodMatch = selectedNeighborhood
+        ? (
+            includesNormalized(place.neighborhood || "", selectedNeighborhood) ||
+            (place.neighborhoodAliases || []).some((alias) => includesNormalized(alias, selectedNeighborhood))
+          )
+        : true;
 
       const streetMatch = selectedStreet
         ? (
@@ -180,32 +207,19 @@ function getFilteredPlaces() {
         ? (
             place.styles.some((style) => includesNormalized(style, customStyle)) ||
             includesNormalized(place.descriptionHe, customStyle) ||
-            includesNormalized(place.nameHe, customStyle)
+            includesNormalized(place.nameHe, customStyle) ||
+            includesNormalized(place.street || "", customStyle) ||
+            includesNormalized(place.neighborhood || "", customStyle)
           )
         : true;
 
-      const textBlob = [
-        place.nameHe,
-        place.nameEn,
-        place.country,
-        place.city,
-        place.neighborhood || "",
-        place.street || "",
-        place.houseNumber || "",
-        ...(place.countryAliases || []),
-        ...(place.cityAliases || []),
-        ...(place.neighborhoodAliases || []),
-        ...(place.streetAliases || []),
-        ...(place.styles || []),
-        place.descriptionHe
-      ].join(" ");
-
-      const searchMatch = searchTerm ? includesNormalized(textBlob, searchTerm) : true;
+      const searchMatch = searchTerm ? includesNormalized(getTextBlob(place), searchTerm) : true;
 
       return (
         countryMatch &&
         cityMatch &&
         styleMatch &&
+        neighborhoodMatch &&
         streetMatch &&
         houseNumberMatch &&
         customStyleMatch &&
@@ -271,19 +285,31 @@ function buildSuggestions(query) {
         title: style,
         meta: "סגנון",
         style,
-        priority: 80
+        priority: 90
       });
     }
   });
 
   placesData.forEach((place) => {
+    const blob = getTextBlob(place);
+
+    if (includesNormalized(blob, q)) {
+      suggestions.push({
+        type: "place",
+        title: place.nameHe,
+        meta: `${place.city} • ${place.country}`,
+        placeId: place.id,
+        priority: includesNormalized(place.nameHe, q) ? 520 : 300
+      });
+    }
+
     if (place.neighborhood && includesNormalized(place.neighborhood, q)) {
       suggestions.push({
         type: "neighborhood",
         title: place.neighborhood,
         meta: `${place.city} • ${place.country}`,
         placeId: place.id,
-        priority: 260
+        priority: 280
       });
     }
 
@@ -293,7 +319,7 @@ function buildSuggestions(query) {
         title: place.street,
         meta: `${place.city} • ${place.country}`,
         placeId: place.id,
-        priority: 255
+        priority: 275
       });
     }
 
@@ -303,21 +329,7 @@ function buildSuggestions(query) {
         title: `${place.street} ${place.houseNumber}`,
         meta: `${place.city} • ${place.country}`,
         placeId: place.id,
-        priority: 265
-      });
-    }
-
-    let placePriority = 0;
-    if (includesNormalized(place.nameHe, q)) placePriority += 500;
-    if (includesNormalized(place.nameEn, q)) placePriority += 450;
-
-    if (placePriority > 0) {
-      suggestions.push({
-        type: "place",
-        title: place.nameHe,
-        meta: `${place.city} • ${place.country}`,
-        placeId: place.id,
-        priority: placePriority
+        priority: 290
       });
     }
   });
@@ -335,7 +347,7 @@ function buildSuggestions(query) {
       }
     });
 
-  return unique.slice(0, 10);
+  return unique.slice(0, 12);
 }
 
 function renderSuggestions(query) {
@@ -391,7 +403,7 @@ function applySuggestion(item) {
     if (topPlace) {
       openPlace(topPlace.id, true);
     } else {
-      alert(`עדיין אין מקומות מוכנים במערכת עבור ${item.country}.`);
+      setGlobeView();
     }
     return;
   }
@@ -410,7 +422,8 @@ function applySuggestion(item) {
     if (topPlace) {
       openPlace(topPlace.id, true);
     } else {
-      alert(`אין עדיין מקומות מוכנים במערכת עבור ${item.city}.`);
+      alert(`אין עדיין מקומות מוכנים במערכת עבור ${item.city}, אבל העיר זוהתה.`);
+      setMapView();
     }
     return;
   }
@@ -424,25 +437,18 @@ function applySuggestion(item) {
     return;
   }
 
-  if (
-    item.type === "neighborhood" ||
-    item.type === "street" ||
-    item.type === "address" ||
-    item.type === "place"
-  ) {
-    const place = placesData.find((p) => p.id === item.placeId);
-    if (!place) return;
+  const place = placesData.find((p) => p.id === item.placeId);
+  if (!place) return;
 
-    selectedCountry = place.country;
-    selectedCity = place.city;
-    searchTerm = item.title;
-    countrySelect.value = selectedCountry;
-    populateCities(selectedCountry);
-    citySelect.value = selectedCity;
-    searchInput.value = item.title;
-    renderAll();
-    openPlace(place.id, true);
-  }
+  selectedCountry = place.country;
+  selectedCity = place.city;
+  searchTerm = item.title;
+  countrySelect.value = selectedCountry;
+  populateCities(selectedCountry);
+  citySelect.value = selectedCity;
+  searchInput.value = item.title;
+  renderAll();
+  openPlace(place.id, true);
 }
 
 function initGlobe() {
@@ -680,7 +686,7 @@ function openPlace(placeId, autoSwitchToMap = false) {
       if (marker) {
         marker.openPopup();
       }
-    }, 1500);
+    }, 1400);
   }
 }
 
@@ -694,20 +700,7 @@ function parseAddressToCoords(addressText) {
   const q = normalizeText(addressText);
   if (!q) return null;
 
-  const matchedPlace = placesData.find((place) => {
-    const textBlob = [
-      place.city,
-      place.country,
-      place.neighborhood || "",
-      place.street || "",
-      place.houseNumber || "",
-      ...(place.cityAliases || []),
-      ...(place.streetAliases || [])
-    ].join(" ");
-
-    return includesNormalized(textBlob, q);
-  });
-
+  const matchedPlace = placesData.find((place) => includesNormalized(getTextBlob(place), q));
   if (matchedPlace) {
     return {
       lat: matchedPlace.lat,
@@ -716,14 +709,13 @@ function parseAddressToCoords(addressText) {
     };
   }
 
-  const matchedCity = Object.entries(countryCities).find(([country, cities]) =>
+  const matchedCityEntry = Object.entries(countryCities).find(([country, cities]) =>
     cities.some((city) => includesNormalized(city, q))
   );
 
-  if (matchedCity) {
-    const cityName = matchedCity[1].find((city) => includesNormalized(city, q));
+  if (matchedCityEntry) {
+    const cityName = matchedCityEntry[1].find((city) => includesNormalized(city, q));
     const placeInCity = placesData.find((place) => place.city === cityName);
-
     if (placeInCity) {
       return {
         lat: placeInCity.lat,
@@ -763,16 +755,14 @@ function drawWalkingRoute(fromCoords, toCoords) {
 
 function createWalkingRoute() {
   const homeText = homeAddressInput.value.trim();
-
   if (!homeText) {
     alert("כתוב קודם איפה אתה גר.");
     return;
   }
 
   const places = getFilteredPlaces();
-
   if (!places.length) {
-    alert("אין מקום יעד כרגע למסלול הליכה.");
+    alert("אין כרגע יעד למסלול הליכה. בחר קודם עיר או מקום.");
     return;
   }
 
@@ -780,7 +770,7 @@ function createWalkingRoute() {
   const homeCoords = parseAddressToCoords(homeText);
 
   if (!homeCoords) {
-    alert("לא הצלחתי להבין את כתובת ההתחלה. נסה לכתוב עיר, רחוב או מקום קרוב.");
+    alert("לא הצלחתי להבין את כתובת ההתחלה. נסה עיר, שכונה, רחוב או מספר בית.");
     return;
   }
 
@@ -799,7 +789,7 @@ function runSearch() {
   const q = normalizeText(raw);
   if (!q) return;
 
-  searchTerm = "";
+  searchTerm = raw;
 
   const matchingCountry = allCountries.find((country) => includesNormalized(country, q));
   if (matchingCountry) {
@@ -808,15 +798,15 @@ function runSearch() {
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = "";
+    searchTerm = "";
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
     if (topPlace) {
       openPlace(topPlace.id, true);
     } else {
-      alert(`עדיין אין מקומות מוכנים במערכת עבור ${matchingCountry}.`);
+      setGlobeView();
     }
-
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -840,15 +830,15 @@ function runSearch() {
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = selectedCity;
+    searchTerm = "";
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
     if (topPlace) {
       openPlace(topPlace.id, true);
     } else {
-      alert(`אין עדיין מקומות מוכנים במערכת עבור ${matchingCity}.`);
+      setMapView();
     }
-
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -857,52 +847,47 @@ function runSearch() {
   if (matchingStyle) {
     selectedStyle = matchingStyle;
     styleSelect.value = matchingStyle;
+    searchTerm = "";
     renderAll();
     searchSuggestions.classList.add("hidden");
     return;
   }
 
-  const exactPlace = placesData.find((place) =>
-    includesNormalized(place.nameHe, q) ||
-    includesNormalized(place.nameEn, q) ||
-    includesNormalized(place.neighborhood || "", q) ||
-    includesNormalized(place.street || "", q) ||
-    includesNormalized(place.houseNumber || "", q)
-  );
+  const allMatches = placesData.filter((place) => includesNormalized(getTextBlob(place), q));
 
-  if (exactPlace) {
-    selectedCountry = exactPlace.country;
-    selectedCity = exactPlace.city;
-    searchTerm = raw;
+  if (allMatches.length > 0) {
+    const best = allMatches.sort((a, b) => scorePlace(b) - scorePlace(a))[0];
+    selectedCountry = best.country;
+    selectedCity = best.city;
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = selectedCity;
+    searchTerm = raw;
     renderAll();
-    openPlace(exactPlace.id, true);
+    openPlace(best.id, true);
     searchSuggestions.classList.add("hidden");
     return;
   }
 
-  alert("לא נמצא יעד מתאים לחיפוש.");
+  renderAll();
+  searchSuggestions.classList.add("hidden");
 }
 
 function runFilterSearch() {
-  searchTerm = "";
   customStyle = customStyleInput.value.trim();
-
   selectedCountry = countrySelect.value;
   selectedCity = citySelect.value;
   selectedStyle = styleSelect.value;
   selectedStreet = streetInput.value.trim();
   selectedHouseNumber = houseNumberInput.value.trim();
+  selectedNeighborhood = neighborhoodInput.value.trim();
+  searchTerm = "";
 
   renderAll();
 
   const places = getFilteredPlaces();
   if (places.length > 0) {
     openPlace(places[0].id, true);
-  } else {
-    alert("לא נמצאו תוצאות לפי הסינון.");
   }
 }
 
@@ -935,7 +920,7 @@ function buildPremiumPlan() {
       );
     })
     .sort((a, b) => b.interestScore - a.interestScore)
-    .slice(0, 4);
+    .slice(0, 5);
 
   if (!matchingPlaces.length) {
     premiumOutput.textContent = "לא נמצאו מספיק מקומות מתאימים לתוכנית.";
@@ -957,6 +942,7 @@ function resetAll() {
   customStyle = "";
   selectedStreet = "";
   selectedHouseNumber = "";
+  selectedNeighborhood = "";
   searchTerm = "";
   activePlaceId = null;
 
@@ -967,6 +953,7 @@ function resetAll() {
   customStyleInput.value = "";
   streetInput.value = "";
   houseNumberInput.value = "";
+  neighborhoodInput.value = "";
   homeAddressInput.value = "";
   searchInput.value = "";
 
@@ -985,15 +972,15 @@ countrySelect.addEventListener("change", (event) => {
   selectedCity = "";
   citySelect.value = "";
   populateCities(selectedCountry);
-  closeOverlay();
   clearRoute();
+  closeOverlay();
   renderAll();
 });
 
 citySelect.addEventListener("change", (event) => {
   selectedCity = event.target.value;
-  closeOverlay();
   clearRoute();
+  closeOverlay();
   renderAll();
 });
 
@@ -1012,8 +999,7 @@ filterSearchBtn.addEventListener("click", runFilterSearch);
 walkRouteBtn.addEventListener("click", createWalkingRoute);
 
 searchInput.addEventListener("input", (event) => {
-  const value = event.target.value.trim();
-  renderSuggestions(value);
+  renderSuggestions(event.target.value.trim());
 });
 
 searchInput.addEventListener("keydown", (event) => {
@@ -1033,10 +1019,8 @@ document.addEventListener("click", (event) => {
 });
 
 resetFiltersBtn.addEventListener("click", resetAll);
-
 showGlobeBtn.addEventListener("click", setGlobeView);
 showMapBtn.addEventListener("click", setMapView);
-
 closeOverlayBtn.addEventListener("click", closeOverlay);
 
 overlayFocusBtn.addEventListener("click", () => {
