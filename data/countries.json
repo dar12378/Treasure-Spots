@@ -1,0 +1,17 @@
+[
+  {
+    "name": "ישראל",
+    "code": "IL",
+    "aliases": ["ישראל", "israel"]
+  },
+  {
+    "name": "ארצות הברית",
+    "code": "US",
+    "aliases": ["ארצות הברית", "usa", "united states", "america", "ארהב", "ארה\"ב"]
+  },
+  {
+    "name": "צרפת",
+    "code": "FR",
+    "aliases": ["צרפת", "france"]
+  }
+]
