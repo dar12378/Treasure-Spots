@@ -6,6 +6,7 @@ const streetInput = document.getElementById("streetInput");
 const houseNumberInput = document.getElementById("houseNumberInput");
 const neighborhoodInput = document.getElementById("neighborhoodInput");
 const homeAddressInput = document.getElementById("homeAddressInput");
+const viaAddressInput = document.getElementById("viaAddressInput");
 
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
@@ -56,6 +57,7 @@ let map;
 let mapMarkers = [];
 let routeLine = null;
 let startMarker = null;
+let viaMarker = null;
 
 function normalizeText(text) {
   return String(text || "")
@@ -92,6 +94,24 @@ function getLocalTime(timezone) {
   } catch {
     return "לא ידוע";
   }
+}
+
+function getTextBlob(place) {
+  return [
+    place.nameHe,
+    place.nameEn,
+    place.country,
+    place.city,
+    place.neighborhood || "",
+    place.street || "",
+    place.houseNumber || "",
+    ...(place.countryAliases || []),
+    ...(place.cityAliases || []),
+    ...(place.neighborhoodAliases || []),
+    ...(place.streetAliases || []),
+    ...(place.styles || []),
+    place.descriptionHe
+  ].join(" ");
 }
 
 function populateCountries() {
@@ -158,24 +178,6 @@ function scorePlace(place) {
   }
 
   return score;
-}
-
-function getTextBlob(place) {
-  return [
-    place.nameHe,
-    place.nameEn,
-    place.country,
-    place.city,
-    place.neighborhood || "",
-    place.street || "",
-    place.houseNumber || "",
-    ...(place.countryAliases || []),
-    ...(place.cityAliases || []),
-    ...(place.neighborhoodAliases || []),
-    ...(place.streetAliases || []),
-    ...(place.styles || []),
-    place.descriptionHe
-  ].join(" ");
 }
 
 function getFilteredPlaces() {
@@ -400,11 +402,8 @@ function applySuggestion(item) {
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    } else {
-      setGlobeView();
-    }
+    if (topPlace) openPlace(topPlace.id, true);
+    else setGlobeView();
     return;
   }
 
@@ -419,12 +418,8 @@ function applySuggestion(item) {
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    } else {
-      alert(`אין עדיין מקומות מוכנים במערכת עבור ${item.city}, אבל העיר זוהתה.`);
-      setMapView();
-    }
+    if (topPlace) openPlace(topPlace.id, true);
+    else setMapView();
     return;
   }
 
@@ -525,6 +520,11 @@ function clearRoute() {
   if (startMarker) {
     map.removeLayer(startMarker);
     startMarker = null;
+  }
+
+  if (viaMarker) {
+    map.removeLayer(viaMarker);
+    viaMarker = null;
   }
 }
 
@@ -683,9 +683,7 @@ function openPlace(placeId, autoSwitchToMap = false) {
       map.setView([place.lat, place.lng], 15);
 
       const marker = mapMarkers.find((m) => m.placeId === place.id);
-      if (marker) {
-        marker.openPopup();
-      }
+      if (marker) marker.openPopup();
     }, 1400);
   }
 }
@@ -728,33 +726,30 @@ function parseAddressToCoords(addressText) {
   return null;
 }
 
-function drawWalkingRoute(fromCoords, toCoords) {
+function drawWalkingRoute(points, labels) {
   clearRoute();
 
-  routeLine = L.polyline(
-    [
-      [fromCoords.lat, fromCoords.lng],
-      [toCoords.lat, toCoords.lng]
-    ],
-    {
-      weight: 5,
-      opacity: 0.8
-    }
-  ).addTo(map);
+  routeLine = L.polyline(points, {
+    weight: 5,
+    opacity: 0.85
+  }).addTo(map);
 
-  startMarker = L.marker([fromCoords.lat, fromCoords.lng]).addTo(map);
-  startMarker.bindPopup(`נקודת התחלה: ${escapeHtml(fromCoords.label)}`).openPopup();
+  startMarker = L.marker(points[0]).addTo(map);
+  startMarker.bindPopup(`נקודת התחלה: ${escapeHtml(labels.start)}`).openPopup();
 
-  const bounds = L.latLngBounds([
-    [fromCoords.lat, fromCoords.lng],
-    [toCoords.lat, toCoords.lng]
-  ]);
+  if (points.length === 3) {
+    viaMarker = L.marker(points[1]).addTo(map);
+    viaMarker.bindPopup(`עובר דרך: ${escapeHtml(labels.via)}`);
+  }
 
+  const bounds = L.latLngBounds(points);
   map.fitBounds(bounds, { padding: [40, 40] });
 }
 
 function createWalkingRoute() {
   const homeText = homeAddressInput.value.trim();
+  const viaText = viaAddressInput.value.trim();
+
   if (!homeText) {
     alert("כתוב קודם איפה אתה גר.");
     return;
@@ -770,18 +765,38 @@ function createWalkingRoute() {
   const homeCoords = parseAddressToCoords(homeText);
 
   if (!homeCoords) {
-    alert("לא הצלחתי להבין את כתובת ההתחלה. נסה עיר, שכונה, רחוב או מספר בית.");
+    alert("לא הצלחתי להבין את כתובת ההתחלה.");
     return;
   }
 
-  setMapView();
+  let points = [
+    [homeCoords.lat, homeCoords.lng],
+    [destination.lat, destination.lng]
+  ];
 
-  setTimeout(() => {
-    drawWalkingRoute(homeCoords, {
-      lat: destination.lat,
-      lng: destination.lng
-    });
-  }, 200);
+  const labels = {
+    start: homeCoords.label,
+    via: "",
+    end: destination.nameHe
+  };
+
+  if (viaText) {
+    const viaCoords = parseAddressToCoords(viaText);
+    if (!viaCoords) {
+      alert("לא הצלחתי להבין את נקודת המעבר שכתבת.");
+      return;
+    }
+
+    points = [
+      [homeCoords.lat, homeCoords.lng],
+      [viaCoords.lat, viaCoords.lng],
+      [destination.lat, destination.lng]
+    ];
+    labels.via = viaCoords.label;
+  }
+
+  setMapView();
+  setTimeout(() => drawWalkingRoute(points, labels), 200);
 }
 
 function runSearch() {
@@ -802,11 +817,9 @@ function runSearch() {
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    } else {
-      setGlobeView();
-    }
+    if (topPlace) openPlace(topPlace.id, true);
+    else setGlobeView();
+
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -834,11 +847,9 @@ function runSearch() {
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    } else {
-      setMapView();
-    }
+    if (topPlace) openPlace(topPlace.id, true);
+    else setMapView();
+
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -955,6 +966,7 @@ function resetAll() {
   houseNumberInput.value = "";
   neighborhoodInput.value = "";
   homeAddressInput.value = "";
+  viaAddressInput.value = "";
   searchInput.value = "";
 
   closeOverlay();
