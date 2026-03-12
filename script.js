@@ -31,6 +31,7 @@ const tripBudget = document.getElementById("tripBudget");
 const tripDays = document.getElementById("tripDays");
 const tripStyle = document.getElementById("tripStyle");
 const tripCustomStyle = document.getElementById("tripCustomStyle");
+const tripHotelLevel = document.getElementById("tripHotelLevel");
 const premiumPlanBtn = document.getElementById("premiumPlanBtn");
 const premiumOutput = document.getElementById("premiumOutput");
 
@@ -137,6 +138,12 @@ function getPlaceSearchScore(place, query) {
   if (includesNormalized(place.city, q)) score += 90;
   if ((place.cityAliases || []).some((alias) => includesNormalized(alias, q))) score += 85;
 
+  if (place.neighborhood && includesNormalized(place.neighborhood, q)) score += 95;
+  if ((place.neighborhoodAliases || []).some((alias) => includesNormalized(alias, q))) score += 90;
+
+  if (place.street && includesNormalized(place.street, q)) score += 92;
+  if ((place.streetAliases || []).some((alias) => includesNormalized(alias, q))) score += 88;
+
   if (includesNormalized(place.country, q)) score += 70;
   if ((place.countryAliases || []).some((alias) => includesNormalized(alias, q))) score += 65;
 
@@ -193,8 +200,12 @@ function getFilteredPlaces() {
         place.nameEn,
         place.country,
         place.city,
+        place.neighborhood || "",
+        place.street || "",
         ...(place.countryAliases || []),
         ...(place.cityAliases || []),
+        ...(place.neighborhoodAliases || []),
+        ...(place.streetAliases || []),
         ...(place.styles || []),
         place.descriptionHe
       ].join(" ");
@@ -235,7 +246,7 @@ function buildSuggestions(query) {
         title: country,
         meta: "מדינה",
         country,
-        priority: 40
+        priority: 100
       });
     }
   });
@@ -246,10 +257,10 @@ function buildSuggestions(query) {
         suggestions.push({
           type: "city",
           title: city,
-          meta: `עיר • ${country}`,
+          meta: country,
           country,
           city,
-          priority: 60
+          priority: 200
         });
       }
     });
@@ -262,21 +273,40 @@ function buildSuggestions(query) {
         title: style,
         meta: "סגנון",
         style,
-        priority: 30
+        priority: 80
       });
     }
   });
 
   placesData.forEach((place) => {
-    const placeScore = getPlaceSearchScore(place, q);
+    if (place.neighborhood && includesNormalized(place.neighborhood, q)) {
+      suggestions.push({
+        type: "neighborhood",
+        title: place.neighborhood,
+        meta: `${place.city} • ${place.country}`,
+        placeId: place.id,
+        priority: 260
+      });
+    }
 
+    if (place.street && includesNormalized(place.street, q)) {
+      suggestions.push({
+        type: "street",
+        title: place.street,
+        meta: `${place.city} • ${place.country}`,
+        placeId: place.id,
+        priority: 255
+      });
+    }
+
+    const placeScore = getPlaceSearchScore(place, q);
     if (placeScore > 0) {
       suggestions.push({
         type: "place",
         title: place.nameHe,
-        meta: `${place.city}, ${place.country}`,
+        meta: `${place.city} • ${place.country}`,
         placeId: place.id,
-        priority: placeScore + 100
+        priority: placeScore + 300
       });
     }
   });
@@ -309,8 +339,17 @@ function renderSuggestions(query) {
   suggestions.forEach((item) => {
     const div = document.createElement("div");
     div.className = "search-suggestion-item";
+
+    let icon = "📍";
+    if (item.type === "country") icon = "🌍";
+    if (item.type === "city") icon = "🏙️";
+    if (item.type === "style") icon = "✨";
+    if (item.type === "neighborhood") icon = "🏘️";
+    if (item.type === "street") icon = "🛣️";
+    if (item.type === "place") icon = "📌";
+
     div.innerHTML = `
-      <div class="search-suggestion-title">${escapeHtml(item.title)}</div>
+      <div class="search-suggestion-title">${icon} ${escapeHtml(item.title)}</div>
       <div class="search-suggestion-meta">${escapeHtml(item.meta)}</div>
     `;
 
@@ -334,13 +373,10 @@ function applySuggestion(item) {
     citySelect.value = "";
     searchInput.value = item.title;
     searchTerm = "";
-
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    }
+    if (topPlace) openPlace(topPlace.id, true);
     return;
   }
 
@@ -352,13 +388,10 @@ function applySuggestion(item) {
     citySelect.value = selectedCity;
     searchInput.value = item.title;
     searchTerm = "";
-
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    }
+    if (topPlace) openPlace(topPlace.id, true);
     return;
   }
 
@@ -371,7 +404,7 @@ function applySuggestion(item) {
     return;
   }
 
-  if (item.type === "place") {
+  if (item.type === "neighborhood" || item.type === "street" || item.type === "place") {
     const place = placesData.find((p) => p.id === item.placeId);
     if (!place) return;
 
@@ -380,9 +413,8 @@ function applySuggestion(item) {
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = selectedCity;
-    searchInput.value = place.nameHe;
-    searchTerm = place.nameHe;
-
+    searchInput.value = item.title;
+    searchTerm = item.title;
     renderAll();
     openPlace(place.id, true);
   }
@@ -487,6 +519,8 @@ function renderMapMarkers() {
       <div style="min-width:220px; direction: rtl; text-align: right;">
         <strong>${escapeHtml(place.nameHe)}</strong><br>
         ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
+        ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? "<br>" : ""}
+        ${escapeHtml(place.street || "")}${place.street ? "<br>" : ""}
         שעה מקומית: ${escapeHtml(getLocalTime(place.timezone))}
       </div>
     `);
@@ -544,6 +578,8 @@ function renderPlacesList() {
 
         <div class="place-meta">
           ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
+          ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? " • " : ""}
+          ${escapeHtml(place.street || "")}<br>
           שעה: ${escapeHtml(getLocalTime(place.timezone))} • עניין: ${place.interestScore}/100 • טיסה: $${place.estimatedFlightUsd}
         </div>
 
@@ -573,7 +609,8 @@ function openOverlay(place) {
   overlayBadge.className = `overlay-badge ${place.category}`;
 
   overlayTitle.textContent = place.nameHe;
-  overlayMeta.textContent = `${place.city}, ${place.country} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
+  overlayMeta.textContent =
+    `${place.city}, ${place.country} • ${place.neighborhood || ""} ${place.street ? "• " + place.street : ""} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
   overlayDescription.textContent = place.descriptionHe;
   overlaySourceBtn.href = place.sourceUrl;
 
@@ -651,9 +688,7 @@ function runSearch() {
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    }
+    if (topPlace) openPlace(topPlace.id, true);
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -680,9 +715,7 @@ function runSearch() {
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
-    if (topPlace) {
-      openPlace(topPlace.id, true);
-    }
+    if (topPlace) openPlace(topPlace.id, true);
     searchSuggestions.classList.add("hidden");
     return;
   }
@@ -718,6 +751,7 @@ function buildPremiumPlan() {
   const budget = Number(tripBudget.value || 0);
   const days = Number(tripDays.value || 0);
   const chosenStyle = tripCustomStyle.value.trim() || tripStyle.value || selectedStyle || customStyle;
+  const hotelLevel = tripHotelLevel.value || "4 כוכבים";
 
   if (!selectedCountry || !selectedCity) {
     premiumOutput.textContent = "בחר קודם מדינה ועיר.";
@@ -752,6 +786,7 @@ function buildPremiumPlan() {
   premiumOutput.textContent =
     `תוכנית פרימיום לדוגמה: ${days} ימים ב${selectedCity}, ${selectedCountry}. ` +
     `סגנון: ${chosenStyle || "כללי"}. ` +
+    `מלון מומלץ: ${hotelLevel}. ` +
     `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
     `תקציב כולל: $${budget}.`;
 }
