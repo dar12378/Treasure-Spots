@@ -17,13 +17,20 @@
         <p>גלו מקומות אמיתיים בעולם עם גלובוס, מפה וחיפוש חכם</p>
       </div>
 
-      <div class="card">
+      <div class="card search-card">
         <h2>חיפוש חכם</h2>
+
         <div class="smart-search-wrap">
-          <input id="searchInput" type="text" placeholder="חפש מדינה, עיר, מקום או סגנון..." autocomplete="off" />
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="חפש מדינה, עיר, מקום או סגנון..."
+            autocomplete="off"
+          />
           <div id="searchSuggestions" class="search-suggestions hidden"></div>
         </div>
-        <button id="searchBtn" class="primary-btn">חפש</button>
+
+        <button id="searchBtn" class="primary-btn">🔍 חפש</button>
       </div>
 
       <div class="card">
@@ -53,7 +60,11 @@
         </select>
 
         <label for="customStyleInput">סגנון משלך</label>
-        <input id="customStyleInput" type="text" placeholder="למשל שקט, יוקרתי, צילום..." />
+        <input
+          id="customStyleInput"
+          type="text"
+          placeholder="למשל שקט, יוקרתי, צילום..."
+        />
 
         <button id="resetFiltersBtn" class="secondary-btn">איפוס</button>
       </div>
@@ -73,7 +84,11 @@
         </select>
 
         <label for="tripCustomStyle">סגנון אישי</label>
-        <input id="tripCustomStyle" type="text" placeholder="למשל רגוע, רומנטי, אוכל טוב..." />
+        <input
+          id="tripCustomStyle"
+          type="text"
+          placeholder="למשל רגוע, רומנטי, אוכל טוב..."
+        />
 
         <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
         <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
