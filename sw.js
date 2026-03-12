@@ -1,4 +1,4 @@
-const CACHE_NAME = "treasure-spots-v1";
+const CACHE_NAME = "treasure-spots-v2";
 
 const FILES_TO_CACHE = [
   "./",
@@ -6,7 +6,12 @@ const FILES_TO_CACHE = [
   "./style.css",
   "./script.js",
   "./data.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
+  "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+  "https://cdn.jsdelivr.net/npm/globe.gl"
 ];
 
 self.addEventListener("install", (event) => {
@@ -32,7 +37,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request);
+      return (
+        cached ||
+        fetch(event.request).catch(() => caches.match("./index.html"))
+      );
     })
   );
 });
