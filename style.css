@@ -1,528 +1,495 @@
-const countrySelect = document.getElementById("countrySelect");
-const citySelect = document.getElementById("citySelect");
-const styleSelect = document.getElementById("styleSelect");
-
-const searchInput = document.getElementById("searchInput");
-const searchBtn = document.getElementById("searchBtn");
-const resetFiltersBtn = document.getElementById("resetFiltersBtn");
-
-const showGlobeBtn = document.getElementById("showGlobeBtn");
-const showMapBtn = document.getElementById("showMapBtn");
-
-const globeSection = document.getElementById("globeSection");
-const mapSection = document.getElementById("mapSection");
-
-const placesList = document.getElementById("placesList");
-const resultsCount = document.getElementById("resultsCount");
-const emptyPlacesMessage = document.getElementById("emptyPlacesMessage");
-
-const placeOverlay = document.getElementById("placeOverlay");
-const closeOverlayBtn = document.getElementById("closeOverlayBtn");
-const overlayBadge = document.getElementById("overlayBadge");
-const overlayTitle = document.getElementById("overlayTitle");
-const overlayMeta = document.getElementById("overlayMeta");
-const overlayDescription = document.getElementById("overlayDescription");
-const overlaySourceBtn = document.getElementById("overlaySourceBtn");
-const overlayFocusBtn = document.getElementById("overlayFocusBtn");
-
-const tripBudget = document.getElementById("tripBudget");
-const tripDays = document.getElementById("tripDays");
-const tripStyle = document.getElementById("tripStyle");
-const premiumPlanBtn = document.getElementById("premiumPlanBtn");
-const premiumOutput = document.getElementById("premiumOutput");
-
-let selectedCountry = "";
-let selectedCity = "";
-let selectedStyle = "";
-let searchTerm = "";
-let activePlaceId = null;
-
-let globe;
-let map;
-let mapMarkers = [];
-
-function normalizeText(text) {
-  return String(text || "")
-    .trim()
-    .toLowerCase()
-    .replace(/["']/g, "");
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-function getLocalTime(timezone) {
-  try {
-    return new Intl.DateTimeFormat("he-IL", {
-      timeZone: timezone,
-      hour: "2-digit",
-      minute: "2-digit"
-    }).format(new Date());
-  } catch {
-    return "לא ידוע";
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background: #08111f;
+  color: #e5e7eb;
+}
+
+body {
+  overflow: hidden;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  width: 100%;
+  height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, #0a1220, #101826);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.brand-block {
+  margin-bottom: 18px;
+}
+
+.brand-block h1 {
+  font-size: 1.9rem;
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.brand-block p {
+  color: #9ca3af;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.card h2 {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+  color: #ffffff;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  margin-top: 12px;
+  font-weight: 700;
+  color: #d1d5db;
+  font-size: 0.92rem;
+}
+
+input,
+select {
+  width: 100%;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 0 12px;
+  font-size: 0.95rem;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+}
+
+.smart-search-wrap {
+  position: relative;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.search-suggestion-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion-item:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.search-suggestion-title {
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.search-suggestion-meta {
+  font-size: 0.85rem;
+  color: #93c5fd;
+}
+
+.primary-btn,
+.secondary-btn,
+.premium-btn,
+.focus-btn,
+.view-btn,
+.overlay-focus-btn {
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.primary-btn,
+.secondary-btn,
+.premium-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 12px;
+}
+
+.primary-btn {
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+.secondary-btn {
+  background: #facc15;
+  color: #111827;
+}
+
+.premium-btn {
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: white;
+}
+
+.view-switch {
+  display: flex;
+  gap: 10px;
+}
+
+.view-btn {
+  flex: 1;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.view-btn.active {
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+.places-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.places-header span {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.places-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.place-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.place-item-content {
+  padding: 14px;
+}
+
+.place-item-content h3 {
+  font-size: 1rem;
+  margin-bottom: 6px;
+  color: #ffffff;
+}
+
+.place-meta {
+  color: #7dd3fc;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.place-desc {
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.place-tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.place-tag.popular {
+  background: rgba(250, 204, 21, 0.18);
+  color: #fde68a;
+}
+
+.place-tag.recommended {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+}
+
+.place-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.focus-btn {
+  height: 40px;
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+.source-btn {
+  height: 40px;
+  background: #1f2937;
+  color: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.empty-message,
+.premium-output {
+  margin-top: 10px;
+  color: #9ca3af;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.viewer-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #10203b 0%, #050b16 68%);
+}
+
+.viewer-section {
+  width: 100%;
+  height: 100%;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#globeSection,
+#mapSection {
+  width: 100%;
+  height: 100%;
+}
+
+#mapSection .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #0b1220;
+}
+
+.custom-pin {
+  width: 26px;
+  height: 26px;
+  background: #ea4335;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+.custom-pin::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: white;
+  position: absolute;
+  border-radius: 50%;
+  top: 6px;
+  left: 6px;
+}
+
+.pin {
+  width: 28px;
+  height: 28px;
+  position: relative;
+  transform: translate(-50%, -100%);
+}
+
+.pin-shape {
+  width: 28px;
+  height: 28px;
+  background: #ea4335;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.pin-inner {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.pin-label {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(17, 24, 39, 0.94);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  opacity: 0;
+  transition: 0.2s ease;
+  pointer-events: none;
+}
+
+.pin:hover .pin-label {
+  opacity: 1;
+}
+
+.place-overlay {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  width: min(380px, calc(100% - 36px));
+  background: rgba(10, 18, 32, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 18px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  z-index: 9;
+}
+
+.overlay-close {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+}
+
+.overlay-badge {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.overlay-badge.popular {
+  background: rgba(250, 204, 21, 0.18);
+  color: #fde68a;
+}
+
+.overlay-badge.recommended {
+  background: rgba(56, 189, 248, 0.16);
+  color: #7dd3fc;
+}
+
+#overlayTitle {
+  margin-bottom: 6px;
+  color: #fff;
+  font-size: 1.2rem;
+}
+
+#overlayMeta {
+  color: #7dd3fc;
+  font-weight: 700;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+#overlayDescription {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.overlay-link,
+.overlay-focus-btn {
+  height: 42px;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.overlay-link {
+  background: #1f2937;
+  color: #fff;
+}
+
+.overlay-focus-btn {
+  background: #38bdf8;
+  color: #0b1220;
+}
+
+@media (max-width: 960px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .sidebar {
+    border-left: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .viewer-area {
+    height: 72vh;
   }
 }
-
-function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, (char) => {
-    const map = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    };
-    return map[char];
-  });
-}
-
-function populateCountries() {
-  allCountries.forEach((country) => {
-    const option = document.createElement("option");
-    option.value = country;
-    option.textContent = country;
-    countrySelect.appendChild(option);
-  });
-}
-
-function populateCities(country) {
-  citySelect.innerHTML = '<option value="">בחר עיר</option>';
-
-  if (!country || !countryCities[country]) {
-    citySelect.disabled = true;
-    return;
-  }
-
-  countryCities[country].forEach((city) => {
-    const option = document.createElement("option");
-    option.value = city;
-    option.textContent = city;
-    citySelect.appendChild(option);
-  });
-
-  citySelect.disabled = false;
-}
-
-function populateStyles() {
-  allStyles.forEach((style) => {
-    const option1 = document.createElement("option");
-    option1.value = style;
-    option1.textContent = style;
-    styleSelect.appendChild(option1);
-
-    const option2 = document.createElement("option");
-    option2.value = style;
-    option2.textContent = style;
-    tripStyle.appendChild(option2);
-  });
-}
-
-function scorePlace(place) {
-  let score = place.interestScore || 0;
-
-  if (selectedStyle && place.styles.includes(selectedStyle)) {
-    score += 20;
-  }
-
-  if (place.category === "popular") {
-    score += 5;
-  }
-
-  return score;
-}
-
-function getFilteredPlaces() {
-  return placesData
-    .filter((place) => {
-      const countryMatch = selectedCountry ? place.country === selectedCountry : true;
-      const cityMatch = selectedCity ? place.city === selectedCity : true;
-      const styleMatch = selectedStyle ? place.styles.includes(selectedStyle) : true;
-
-      const textBlob = [
-        place.nameHe,
-        place.nameEn,
-        place.country,
-        place.city,
-        ...(place.countryAliases || []),
-        ...(place.cityAliases || []),
-        place.descriptionHe
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      const searchMatch = searchTerm ? textBlob.includes(searchTerm.toLowerCase()) : true;
-
-      return countryMatch && cityMatch && styleMatch && searchMatch;
-    })
-    .sort((a, b) => scorePlace(b) - scorePlace(a));
-}
-
-function findBestSearchMatch(query) {
-  const q = normalizeText(query);
-  if (!q) return null;
-
-  return (
-    placesData.find((place) => normalizeText(place.nameHe).includes(q)) ||
-    placesData.find((place) => normalizeText(place.nameEn).includes(q)) ||
-    placesData.find((place) => normalizeText(place.city).includes(q)) ||
-    placesData.find((place) => (place.cityAliases || []).some((alias) => normalizeText(alias).includes(q))) ||
-    placesData.find((place) => (place.countryAliases || []).some((alias) => normalizeText(alias).includes(q))) ||
-    null
-  );
-}
-
-function initGlobe() {
-  globe = Globe()(globeSection)
-    .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
-    .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
-    .showAtmosphere(true)
-    .atmosphereColor("#4da3ff")
-    .atmosphereAltitude(0.18)
-    .htmlElementsData([])
-    .htmlLat((d) => d.lat)
-    .htmlLng((d) => d.lng)
-    .htmlElement((d) => createGlobePin(d));
-
-  globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 0);
-  resizeGlobe();
-
-  window.addEventListener("resize", resizeGlobe);
-}
-
-function resizeGlobe() {
-  const sidebarWidth = window.innerWidth > 960 ? 390 : 0;
-  globe.width(window.innerWidth - sidebarWidth);
-  globe.height(window.innerWidth > 960 ? window.innerHeight : window.innerHeight * 0.72);
-}
-
-function createGlobePin(place) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "pin";
-  wrapper.innerHTML = `
-    <div class="pin-label">${escapeHtml(place.nameHe)}</div>
-    <div class="pin-shape"></div>
-    <div class="pin-inner"></div>
-  `;
-  wrapper.style.cursor = "pointer";
-
-  wrapper.addEventListener("click", (event) => {
-    event.stopPropagation();
-    openPlace(place.id, true);
-  });
-
-  return wrapper;
-}
-
-function initMap() {
-  map = L.map("mapSection").setView([31.7683, 35.2137], 3);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(map);
-}
-
-function createMapPinIcon() {
-  return L.divIcon({
-    className: "",
-    html: '<div class="custom-pin"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 26],
-    popupAnchor: [0, -24]
-  });
-}
-
-function clearMapMarkers() {
-  mapMarkers.forEach((marker) => map.removeLayer(marker));
-  mapMarkers = [];
-}
-
-function renderMapMarkers() {
-  clearMapMarkers();
-
-  const visiblePlaces = selectedCountry && selectedCity ? getFilteredPlaces() : [];
-
-  visiblePlaces.forEach((place) => {
-    const marker = L.marker([place.lat, place.lng], {
-      icon: createMapPinIcon()
-    }).addTo(map);
-
-    marker.placeId = place.id;
-
-    marker.bindPopup(`
-      <div style="min-width:220px; direction: rtl; text-align: right;">
-        <strong>${escapeHtml(place.nameHe)}</strong><br>
-        ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
-        שעה מקומית: ${escapeHtml(getLocalTime(place.timezone))}
-      </div>
-    `);
-
-    marker.on("click", () => {
-      openOverlay(place);
-    });
-
-    mapMarkers.push(marker);
-  });
-
-  if (visiblePlaces.length === 1) {
-    map.setView([visiblePlaces[0].lat, visiblePlaces[0].lng], 14);
-  } else if (visiblePlaces.length > 1) {
-    const bounds = L.latLngBounds(visiblePlaces.map((place) => [place.lat, place.lng]));
-    map.fitBounds(bounds, { padding: [40, 40] });
-  }
-}
-
-function renderGlobeMarkers() {
-  const visiblePlaces = selectedCountry && selectedCity ? getFilteredPlaces() : [];
-  globe.htmlElementsData(visiblePlaces);
-}
-
-function renderPlacesList() {
-  const places = getFilteredPlaces();
-  placesList.innerHTML = "";
-  resultsCount.textContent = places.length;
-
-  if (!selectedCountry || !selectedCity) {
-    emptyPlacesMessage.textContent = "בחר מדינה ועיר או חפש יעד.";
-    emptyPlacesMessage.style.display = "block";
-    return;
-  }
-
-  if (!places.length) {
-    emptyPlacesMessage.textContent = "לא נמצאו מקומות מתאימים.";
-    emptyPlacesMessage.style.display = "block";
-    return;
-  }
-
-  emptyPlacesMessage.style.display = "none";
-
-  places.forEach((place) => {
-    const card = document.createElement("div");
-    card.className = "place-item";
-
-    card.innerHTML = `
-      <div class="place-item-content">
-        <div class="place-tag ${place.category}">
-          ${place.category === "popular" ? "פופולרי" : "מומלץ"}
-        </div>
-
-        <h3>${escapeHtml(place.nameHe)}</h3>
-
-        <div class="place-meta">
-          ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
-          שעה: ${escapeHtml(getLocalTime(place.timezone))} • עניין: ${place.interestScore}/100 • טיסה: $${place.estimatedFlightUsd}
-        </div>
-
-        <div class="place-desc">${escapeHtml(place.descriptionHe)}</div>
-
-        <div class="place-actions">
-          <a class="source-btn" href="${place.sourceUrl}" target="_blank" rel="noopener noreferrer">מקור</a>
-          <button class="focus-btn" data-id="${place.id}">הצג</button>
-        </div>
-      </div>
-    `;
-
-    placesList.appendChild(card);
-  });
-
-  document.querySelectorAll(".focus-btn").forEach((button) => {
-    button.addEventListener("click", () => {
-      openPlace(Number(button.dataset.id), true);
-    });
-  });
-}
-
-function openOverlay(place) {
-  activePlaceId = place.id;
-
-  overlayBadge.textContent = place.category === "popular" ? "פופולרי" : "מומלץ";
-  overlayBadge.className = `overlay-badge ${place.category}`;
-
-  overlayTitle.textContent = place.nameHe;
-  overlayMeta.textContent = `${place.city}, ${place.country} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
-  overlayDescription.textContent = place.descriptionHe;
-  overlaySourceBtn.href = place.sourceUrl;
-
-  placeOverlay.classList.remove("hidden");
-}
-
-function closeOverlay() {
-  placeOverlay.classList.add("hidden");
-}
-
-function setGlobeView() {
-  globeSection.classList.remove("hidden");
-  mapSection.classList.add("hidden");
-  showGlobeBtn.classList.add("active");
-  showMapBtn.classList.remove("active");
-}
-
-function setMapView() {
-  globeSection.classList.add("hidden");
-  mapSection.classList.remove("hidden");
-  showGlobeBtn.classList.remove("active");
-  showMapBtn.classList.add("active");
-
-  setTimeout(() => {
-    map.invalidateSize();
-  }, 150);
-}
-
-function openPlace(placeId, autoSwitchToMap = false) {
-  const place = placesData.find((item) => item.id === placeId);
-  if (!place) return;
-
-  activePlaceId = placeId;
-  openOverlay(place);
-
-  setGlobeView();
-
-  globe.pointOfView(
-    { lat: place.lat, lng: place.lng, altitude: 0.7 },
-    1400
-  );
-
-  if (autoSwitchToMap) {
-    setTimeout(() => {
-      setMapView();
-      map.setView([place.lat, place.lng], 15);
-
-      const marker = mapMarkers.find((m) => m.placeId === place.id);
-      if (marker) {
-        marker.openPopup();
-      }
-    }, 1500);
-  }
-}
-
-function renderAll() {
-  renderPlacesList();
-  renderGlobeMarkers();
-  renderMapMarkers();
-}
-
-function runSearch() {
-  searchTerm = searchInput.value.trim();
-  const target = findBestSearchMatch(searchTerm);
-
-  if (!target) {
-    alert("לא נמצא יעד מתאים לחיפוש.");
-    return;
-  }
-
-  selectedCountry = target.country;
-  selectedCity = target.city;
-
-  countrySelect.value = selectedCountry;
-  populateCities(selectedCountry);
-  citySelect.value = selectedCity;
-
-  renderAll();
-  openPlace(target.id, true);
-}
-
-function buildPremiumPlan() {
-  const budget = Number(tripBudget.value || 0);
-  const days = Number(tripDays.value || 0);
-  const chosenStyle = tripStyle.value || selectedStyle;
-
-  if (!selectedCountry || !selectedCity) {
-    premiumOutput.textContent = "בחר קודם מדינה ועיר.";
-    return;
-  }
-
-  if (!budget || !days) {
-    premiumOutput.textContent = "הכנס תקציב ומספר ימים.";
-    return;
-  }
-
-  const matchingPlaces = placesData
-    .filter((place) => {
-      return (
-        place.country === selectedCountry &&
-        place.city === selectedCity &&
-        (chosenStyle ? place.styles.includes(chosenStyle) : true)
-      );
-    })
-    .sort((a, b) => b.interestScore - a.interestScore)
-    .slice(0, 3);
-
-  if (!matchingPlaces.length) {
-    premiumOutput.textContent = "לא נמצאו מספיק מקומות מתאימים לתוכנית.";
-    return;
-  }
-
-  premiumOutput.textContent =
-    `תוכנית פרימיום לדוגמה: ${days} ימים ב${selectedCity}, ${selectedCountry}. ` +
-    `סגנון: ${chosenStyle || "כללי"}. ` +
-    `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
-    `תקציב כולל: $${budget}. ` +
-    `בשלב הבא אפשר לחבר מנוע אמיתי שיבנה טיסות, מלון, מסלול יומי והמלצות מותאמות אישית.`;
-}
-
-function resetAll() {
-  selectedCountry = "";
-  selectedCity = "";
-  selectedStyle = "";
-  searchTerm = "";
-  activePlaceId = null;
-
-  countrySelect.value = "";
-  citySelect.innerHTML = '<option value="">בחר עיר</option>';
-  citySelect.disabled = true;
-  styleSelect.value = "";
-  searchInput.value = "";
-
-  closeOverlay();
-  renderAll();
-
-  setGlobeView();
-  globe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
-  map.setView([31.7683, 35.2137], 3);
-}
-
-countrySelect.addEventListener("change", (event) => {
-  selectedCountry = event.target.value;
-  selectedCity = "";
-  citySelect.value = "";
-  populateCities(selectedCountry);
-  closeOverlay();
-  renderAll();
-});
-
-citySelect.addEventListener("change", (event) => {
-  selectedCity = event.target.value;
-  closeOverlay();
-  renderAll();
-});
-
-styleSelect.addEventListener("change", (event) => {
-  selectedStyle = event.target.value;
-  renderAll();
-});
-
-searchBtn.addEventListener("click", runSearch);
-
-searchInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    runSearch();
-  }
-});
-
-resetFiltersBtn.addEventListener("click", resetAll);
-
-showGlobeBtn.addEventListener("click", setGlobeView);
-showMapBtn.addEventListener("click", setMapView);
-
-closeOverlayBtn.addEventListener("click", closeOverlay);
-
-overlayFocusBtn.addEventListener("click", () => {
-  if (activePlaceId) {
-    openPlace(activePlaceId, false);
-  }
-});
-
-premiumPlanBtn.addEventListener("click", buildPremiumPlan);
-
-populateCountries();
-populateStyles();
-initGlobe();
-initMap();
-renderAll();
