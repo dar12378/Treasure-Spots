@@ -42,6 +42,10 @@ const tripHotelLevel = document.getElementById("tripHotelLevel");
 const premiumPlanBtn = document.getElementById("premiumPlanBtn");
 const premiumOutput = document.getElementById("premiumOutput");
 
+const tripPrompt = document.getElementById("tripPrompt");
+const tripGenerateBtn = document.getElementById("tripGenerateBtn");
+const tripResult = document.getElementById("tripResult");
+
 let selectedCountry = "";
 let selectedCity = "";
 let selectedStyle = "";
@@ -158,9 +162,7 @@ function populateStyles() {
 function scorePlace(place) {
   let score = place.interestScore || 0;
 
-  if (selectedStyle && place.styles.includes(selectedStyle)) {
-    score += 22;
-  }
+  if (selectedStyle && place.styles.includes(selectedStyle)) score += 22;
 
   if (customStyle) {
     const match =
@@ -173,9 +175,7 @@ function scorePlace(place) {
     if (match) score += 28;
   }
 
-  if (place.category === "popular") {
-    score += 5;
-  }
+  if (place.category === "popular") score += 5;
 
   return score;
 }
@@ -757,7 +757,7 @@ function createWalkingRoute() {
 
   const places = getFilteredPlaces();
   if (!places.length) {
-    alert("אין כרגע יעד למסלול הליכה. בחר קודם עיר או מקום.");
+    alert("אין כרגע יעד למסלול הליכה. בחר קודם יעד.");
     return;
   }
 
@@ -783,7 +783,7 @@ function createWalkingRoute() {
   if (viaText) {
     const viaCoords = parseAddressToCoords(viaText);
     if (!viaCoords) {
-      alert("לא הצלחתי להבין את נקודת המעבר שכתבת.");
+      alert("לא הצלחתי להבין את נקודת המעבר.");
       return;
     }
 
@@ -897,9 +897,7 @@ function runFilterSearch() {
   renderAll();
 
   const places = getFilteredPlaces();
-  if (places.length > 0) {
-    openPlace(places[0].id, true);
-  }
+  if (places.length > 0) openPlace(places[0].id, true);
 }
 
 function buildPremiumPlan() {
@@ -946,6 +944,88 @@ function buildPremiumPlan() {
     `תקציב כולל: $${budget}.`;
 }
 
+function parseTripPrompt(text) {
+  const lower = normalizeText(text);
+
+  let days = 3;
+  const dayMatch = lower.match(/\d+/);
+  if (dayMatch) days = parseInt(dayMatch[0], 10);
+
+  let style = "כללי";
+  if (lower.includes("משפחה") || lower.includes("ילדים")) style = "משפחתי";
+  if (lower.includes("רומנט")) style = "רומנטי";
+  if (lower.includes("אוכל")) style = "אוכל";
+  if (lower.includes("הרפת")) style = "הרפתקאות";
+  if (lower.includes("קניות")) style = "קניות";
+  if (lower.includes("שקט")) style = "שקט";
+
+  let city = "פריז";
+
+  Object.entries(countryCities).forEach(([country, cities]) => {
+    cities.forEach((candidate) => {
+      if (includesNormalized(candidate, lower)) city = candidate;
+    });
+  });
+
+  return { city, days, style };
+}
+
+function generateTripPlan() {
+  const text = tripPrompt.value.trim();
+  if (!text) {
+    tripResult.innerHTML = "כתוב בקשה לתכנון טיול";
+    return;
+  }
+
+  const { city, days, style } = parseTripPrompt(text);
+
+  const places = placesData
+    .filter((place) => place.city === city)
+    .filter((place) => {
+      if (style === "כללי") return true;
+      if (style === "משפחתי") return place.styles.includes("משפחה");
+      if (style === "רומנטי") return place.styles.includes("רומנטי");
+      if (style === "אוכל") return place.styles.includes("אוכל") || place.styles.includes("בתי קפה");
+      if (style === "קניות") return place.styles.includes("קניות") || place.styles.includes("קניונים");
+      if (style === "שקט") return place.styles.includes("שקט");
+      if (style === "הרפתקאות") return place.styles.includes("הרפתקאות") || place.styles.includes("טיול רגלי");
+      return true;
+    })
+    .sort((a, b) => b.interestScore - a.interestScore);
+
+  let html = `<h3>מסלול ${days} ימים ב${city}</h3>`;
+
+  if (!places.length) {
+    html += `כרגע אין מספיק מקומות מוכנים במערכת עבור ${city}, אבל העיר זוהתה.`;
+    tripResult.innerHTML = html;
+    return;
+  }
+
+  for (let i = 1; i <= days; i++) {
+    const morning = places[(i - 1) % places.length];
+    const afternoon = places[i % places.length];
+    const evening = places[(i + 1) % places.length];
+
+    html += `
+      <div class="trip-day">
+        <b>יום ${i}</b><br>
+        בוקר – ${escapeHtml(morning.nameHe)}<br>
+        צהריים – אזור ${escapeHtml(afternoon.neighborhood || afternoon.city)}<br>
+        אחר הצהריים – ${escapeHtml(afternoon.nameHe)}<br>
+        ערב – ${escapeHtml(evening.nameHe)} בסגנון ${escapeHtml(style)}
+      </div>
+    `;
+  }
+
+  html += `
+    <b>סגנון טיול:</b> ${escapeHtml(style)}<br>
+    <b>העיר שנבחרה:</b> ${escapeHtml(city)}<br>
+    <b>טיפ:</b> בחר גם מקום במפה ואז צור מסלול הליכה.
+  `;
+
+  tripResult.innerHTML = html;
+}
+
 function resetAll() {
   selectedCountry = "";
   selectedCity = "";
@@ -968,6 +1048,8 @@ function resetAll() {
   homeAddressInput.value = "";
   viaAddressInput.value = "";
   searchInput.value = "";
+  tripPrompt.value = "";
+  tripResult.innerHTML = "";
 
   closeOverlay();
   clearRoute();
@@ -1009,15 +1091,15 @@ customStyleInput.addEventListener("input", (event) => {
 searchBtn.addEventListener("click", runSearch);
 filterSearchBtn.addEventListener("click", runFilterSearch);
 walkRouteBtn.addEventListener("click", createWalkingRoute);
+premiumPlanBtn.addEventListener("click", buildPremiumPlan);
+tripGenerateBtn.addEventListener("click", generateTripPlan);
 
 searchInput.addEventListener("input", (event) => {
   renderSuggestions(event.target.value.trim());
 });
 
 searchInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    runSearch();
-  }
+  if (event.key === "Enter") runSearch();
 });
 
 document.addEventListener("click", (event) => {
@@ -1025,9 +1107,7 @@ document.addEventListener("click", (event) => {
     searchInput.contains(event.target) ||
     searchSuggestions.contains(event.target);
 
-  if (!clickedInside) {
-    searchSuggestions.classList.add("hidden");
-  }
+  if (!clickedInside) searchSuggestions.classList.add("hidden");
 });
 
 resetFiltersBtn.addEventListener("click", resetAll);
@@ -1036,12 +1116,8 @@ showMapBtn.addEventListener("click", setMapView);
 closeOverlayBtn.addEventListener("click", closeOverlay);
 
 overlayFocusBtn.addEventListener("click", () => {
-  if (activePlaceId) {
-    openPlace(activePlaceId, false);
-  }
+  if (activePlaceId) openPlace(activePlaceId, false);
 });
-
-premiumPlanBtn.addEventListener("click", buildPremiumPlan);
 
 populateCountries();
 populateStyles();
