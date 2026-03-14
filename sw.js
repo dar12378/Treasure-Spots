@@ -1,4 +1,4 @@
-const CACHE_NAME = "treasure-spots-v2";
+const CACHE_NAME = "treasure-spots-v3";
 
 const FILES_TO_CACHE = [
   "./",
@@ -37,10 +37,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request).catch(() => caches.match("./index.html"))
-      );
+      return cached || fetch(event.request).catch(() => caches.match("./index.html"));
     })
   );
 });
