@@ -19,7 +19,7 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות, שכונות, רחובות ומסלולי הליכה</p>
+        <p>גלו מקומות, מסלולים ותכנון טיולים חכם</p>
       </div>
 
       <div class="card search-card">
@@ -61,10 +61,10 @@
         <input id="homeAddressInput" type="text" placeholder="למשל רעננה, אחוזה 124" />
 
         <label for="viaAddressInput">עבור דרך</label>
-        <input id="viaAddressInput" type="text" placeholder="למשל פארק רעננה / אחוזה / קניון" />
+        <input id="viaAddressInput" type="text" placeholder="למשל פארק / קניון / רחוב" />
 
         <label for="neighborhoodInput">שכונה</label>
-        <input id="neighborhoodInput" type="text" placeholder="למשל מרכז העיר / הצפון הישן" />
+        <input id="neighborhoodInput" type="text" placeholder="למשל מרכז העיר" />
 
         <label for="streetInput">רחוב</label>
         <input id="streetInput" type="text" placeholder="למשל אחוזה" />
@@ -86,7 +86,7 @@
 
       <div class="card route-card">
         <h2>תכנון מסלול הליכה</h2>
-        <p class="route-help">בחר יעד, כתוב מאיפה אתה יוצא, ואם תרצה גם "עבור דרך".</p>
+        <p class="route-help">בחר יעד, כתוב מאיפה אתה יוצא, ואם תרצה גם נקודת מעבר.</p>
         <button id="walkRouteBtn" class="primary-btn">צור מסלול הליכה</button>
       </div>
 
@@ -119,6 +119,20 @@
 
         <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
         <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
+      </div>
+
+      <div class="card trip-ai-card">
+        <h2>תכנון טיול חכם</h2>
+        <textarea
+          id="tripPrompt"
+          placeholder="לדוגמה:
+טיול משפחתי לפריז
+חופשה רומנטית ברומא
+טיול אוכל בטוקיו ל-6 ימים
+טיול עם ילדים בלונדון"
+        ></textarea>
+        <button id="tripGenerateBtn" class="primary-btn">צור מסלול טיול</button>
+        <div id="tripResult"></div>
       </div>
 
       <div class="card">
