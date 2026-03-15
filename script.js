@@ -34,6 +34,8 @@ const overlayDescription = document.getElementById("overlayDescription");
 const overlaySourceBtn = document.getElementById("overlaySourceBtn");
 const overlayFocusBtn = document.getElementById("overlayFocusBtn");
 
+const tripCountrySelect = document.getElementById("tripCountrySelect");
+const tripCitySelect = document.getElementById("tripCitySelect");
 const tripBudget = document.getElementById("tripBudget");
 const tripDays = document.getElementById("tripDays");
 const tripStyle = document.getElementById("tripStyle");
@@ -41,14 +43,6 @@ const tripCustomStyle = document.getElementById("tripCustomStyle");
 const tripHotelLevel = document.getElementById("tripHotelLevel");
 const premiumPlanBtn = document.getElementById("premiumPlanBtn");
 const premiumOutput = document.getElementById("premiumOutput");
-
-const tripPrompt = document.getElementById("tripPrompt");
-const tripGenerateBtn = document.getElementById("tripGenerateBtn");
-const tripResult = document.getElementById("tripResult");
-
-const hotelCityInput = document.getElementById("hotelCityInput");
-const hotelSearchBtn = document.getElementById("hotelSearchBtn");
-const hotelResults = document.getElementById("hotelResults");
 
 let selectedCountry = "";
 let selectedCity = "";
@@ -66,7 +60,7 @@ let mapMarkers = [];
 let routeLine = null;
 let startMarker = null;
 let viaMarker = null;
-let lastHotelSearchAt = 0;
+let vacationRouteLines = [];
 
 function normalizeText(text) {
   return String(text || "")
@@ -125,10 +119,15 @@ function getTextBlob(place) {
 
 function populateCountries() {
   allCountries.forEach((country) => {
-    const option = document.createElement("option");
-    option.value = country;
-    option.textContent = country;
-    countrySelect.appendChild(option);
+    const optionA = document.createElement("option");
+    optionA.value = country;
+    optionA.textContent = country;
+    countrySelect.appendChild(optionA);
+
+    const optionB = document.createElement("option");
+    optionB.value = country;
+    optionB.textContent = country;
+    tripCountrySelect.appendChild(optionB);
   });
 }
 
@@ -150,6 +149,24 @@ function populateCities(country) {
   citySelect.disabled = false;
 }
 
+function populateTripCities(country) {
+  tripCitySelect.innerHTML = '<option value="">בחר עיר</option>';
+
+  if (!country || !countryCities[country]) {
+    tripCitySelect.disabled = true;
+    return;
+  }
+
+  countryCities[country].forEach((city) => {
+    const option = document.createElement("option");
+    option.value = city;
+    option.textContent = city;
+    tripCitySelect.appendChild(option);
+  });
+
+  tripCitySelect.disabled = false;
+}
+
 function populateStyles() {
   allStyles.forEach((style) => {
     const optionA = document.createElement("option");
@@ -167,17 +184,15 @@ function populateStyles() {
 function scorePlace(place) {
   let score = place.interestScore || 0;
 
-  if (selectedStyle && place.styles.includes(selectedStyle)) score += 22;
+  if (selectedStyle && place.styles.includes(selectedStyle)) score += 20;
 
   if (customStyle) {
     const match =
       place.styles.some((style) => includesNormalized(style, customStyle)) ||
       includesNormalized(place.descriptionHe, customStyle) ||
-      includesNormalized(place.nameHe, customStyle) ||
-      includesNormalized(place.street || "", customStyle) ||
-      includesNormalized(place.neighborhood || "", customStyle);
+      includesNormalized(place.nameHe, customStyle);
 
-    if (match) score += 28;
+    if (match) score += 25;
   }
 
   if (place.category === "popular") score += 5;
@@ -214,9 +229,7 @@ function getFilteredPlaces() {
         ? (
             place.styles.some((style) => includesNormalized(style, customStyle)) ||
             includesNormalized(place.descriptionHe, customStyle) ||
-            includesNormalized(place.nameHe, customStyle) ||
-            includesNormalized(place.street || "", customStyle) ||
-            includesNormalized(place.neighborhood || "", customStyle)
+            includesNormalized(place.nameHe, customStyle)
           )
         : true;
 
@@ -236,20 +249,16 @@ function getFilteredPlaces() {
     .sort((a, b) => scorePlace(b) - scorePlace(a));
 }
 
-function getTopPlaceForCity(country, city) {
-  const cityPlaces = placesData
-    .filter((place) => place.country === country && place.city === city)
-    .sort((a, b) => b.interestScore - a.interestScore);
-
-  return cityPlaces[0] || null;
+function getTopPlaceForCountry(country) {
+  return placesData
+    .filter((place) => place.country === country)
+    .sort((a, b) => b.interestScore - a.interestScore)[0] || null;
 }
 
-function getTopPlaceForCountry(country) {
-  const countryPlaces = placesData
-    .filter((place) => place.country === country)
-    .sort((a, b) => b.interestScore - a.interestScore);
-
-  return countryPlaces[0] || null;
+function getTopPlaceForCity(country, city) {
+  return placesData
+    .filter((place) => place.country === country && place.city === city)
+    .sort((a, b) => b.interestScore - a.interestScore)[0] || null;
 }
 
 function buildSuggestions(query) {
@@ -329,16 +338,6 @@ function buildSuggestions(query) {
         priority: 275
       });
     }
-
-    if (place.houseNumber && includesNormalized(place.houseNumber, q) && place.street) {
-      suggestions.push({
-        type: "address",
-        title: `${place.street} ${place.houseNumber}`,
-        meta: `${place.city} • ${place.country}`,
-        placeId: place.id,
-        priority: 290
-      });
-    }
   });
 
   const unique = [];
@@ -376,7 +375,6 @@ function renderSuggestions(query) {
     if (item.type === "style") icon = "✨";
     if (item.type === "neighborhood") icon = "🏘️";
     if (item.type === "street") icon = "🛣️";
-    if (item.type === "address") icon = "🏠";
     if (item.type === "place") icon = "📌";
 
     div.innerHTML = `
@@ -403,12 +401,10 @@ function applySuggestion(item) {
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = "";
-    searchInput.value = item.title;
     renderAll();
 
     const topPlace = getTopPlaceForCountry(selectedCountry);
     if (topPlace) openPlace(topPlace.id, true);
-    else setGlobeView();
     return;
   }
 
@@ -419,19 +415,16 @@ function applySuggestion(item) {
     countrySelect.value = selectedCountry;
     populateCities(selectedCountry);
     citySelect.value = selectedCity;
-    searchInput.value = item.title;
     renderAll();
 
     const topPlace = getTopPlaceForCity(selectedCountry, selectedCity);
     if (topPlace) openPlace(topPlace.id, true);
-    else setMapView();
     return;
   }
 
   if (item.type === "style") {
     selectedStyle = item.style;
     styleSelect.value = item.style;
-    searchInput.value = item.title;
     searchTerm = "";
     renderAll();
     return;
@@ -446,7 +439,6 @@ function applySuggestion(item) {
   countrySelect.value = selectedCountry;
   populateCities(selectedCountry);
   citySelect.value = selectedCity;
-  searchInput.value = item.title;
   renderAll();
   openPlace(place.id, true);
 }
@@ -531,6 +523,9 @@ function clearRoute() {
     map.removeLayer(viaMarker);
     viaMarker = null;
   }
+
+  vacationRouteLines.forEach((line) => map.removeLayer(line));
+  vacationRouteLines = [];
 }
 
 function renderMapMarkers() {
@@ -609,7 +604,7 @@ function renderPlacesList() {
         <div class="place-meta">
           ${escapeHtml(place.city)}, ${escapeHtml(place.country)}<br>
           ${escapeHtml(place.neighborhood || "")}${place.neighborhood ? " • " : ""}${escapeHtml(place.street || "")}${place.street ? " " : ""}${escapeHtml(place.houseNumber || "")}<br>
-          שעה: ${escapeHtml(getLocalTime(place.timezone))} • עניין: ${place.interestScore}/100 • טיסה: $${place.estimatedFlightUsd}
+          זמן מומלץ: ${escapeHtml(place.visitTime || "בוקר")} • עניין: ${place.interestScore}/100 • עלות: $${place.estimatedCostUsd || 0}
         </div>
 
         <div class="place-desc">${escapeHtml(place.descriptionHe)}</div>
@@ -639,7 +634,7 @@ function openOverlay(place) {
 
   overlayTitle.textContent = place.nameHe;
   overlayMeta.textContent =
-    `${place.city}, ${place.country} • ${place.neighborhood || ""}${place.street ? " • " + place.street : ""}${place.houseNumber ? " " + place.houseNumber : ""} • שעה מקומית: ${getLocalTime(place.timezone)} • עניין: ${place.interestScore}/100 • טיסה משוערת: $${place.estimatedFlightUsd}`;
+    `${place.city}, ${place.country} • ${place.neighborhood || ""}${place.street ? " • " + place.street : ""}${place.houseNumber ? " " + place.houseNumber : ""} • זמן מומלץ: ${place.visitTime || "בוקר"} • עלות: $${place.estimatedCostUsd || 0}`;
   overlayDescription.textContent = place.descriptionHe;
   overlaySourceBtn.href = place.sourceUrl;
 
@@ -709,6 +704,18 @@ function parseAddressToCoords(addressText) {
       lat: matchedPlace.lat,
       lng: matchedPlace.lng,
       label: `${matchedPlace.city} ${matchedPlace.street || ""} ${matchedPlace.houseNumber || ""}`.trim()
+    };
+  }
+
+  const matchedHotel = hotelsData.find((hotel) =>
+    includesNormalized(`${hotel.nameHe} ${hotel.city} ${hotel.country}`, q)
+  );
+
+  if (matchedHotel) {
+    return {
+      lat: matchedHotel.lat,
+      lng: matchedHotel.lng,
+      label: matchedHotel.nameHe
     };
   }
 
@@ -905,190 +912,202 @@ function runFilterSearch() {
   if (places.length > 0) openPlace(places[0].id, true);
 }
 
-function buildPremiumPlan() {
+function drawVacationPlanOnMap(hotel, attractionsByDay) {
+  clearRoute();
+  setMapView();
+
+  setTimeout(() => {
+    const boundsPoints = [[hotel.lat, hotel.lng]];
+
+    const hotelMarker = L.marker([hotel.lat, hotel.lng]).addTo(map);
+    hotelMarker.bindPopup(`מלון: ${escapeHtml(hotel.nameHe)}`).openPopup();
+
+    attractionsByDay.forEach((dayGroup) => {
+      const dayPoints = [[hotel.lat, hotel.lng]];
+
+      dayGroup.items.forEach((place) => {
+        dayPoints.push([place.lat, place.lng]);
+        boundsPoints.push([place.lat, place.lng]);
+
+        const marker = L.marker([place.lat, place.lng], {
+          icon: createMapPinIcon()
+        }).addTo(map);
+
+        marker.bindPopup(
+          `${escapeHtml(place.nameHe)}<br>זמן מומלץ: ${escapeHtml(dayGroup.slotMap[place.id])}`
+        );
+      });
+
+      const line = L.polyline(dayPoints, {
+        weight: 4,
+        opacity: 0.8
+      }).addTo(map);
+
+      vacationRouteLines.push(line);
+    });
+
+    const bounds = L.latLngBounds(boundsPoints);
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }, 200);
+}
+
+function chooseHotel(country, city, style, hotelLevel, hotelBudgetTotal, days) {
+  const matchingHotels = hotelsData
+    .filter((hotel) => hotel.country === country && hotel.city === city)
+    .filter((hotel) => (hotelLevel ? hotel.level === hotelLevel : true))
+    .filter((hotel) => hotel.nightlyUsd * days <= hotelBudgetTotal * 1.15)
+    .sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+
+      if (style && hotel.styles.includes(style)) scoreA += 20;
+      if (style && hotel.styles.includes(style)) scoreB += 20;
+
+      scoreA += 500 - hotel.nightlyUsd;
+      scoreB += 500 - hotel.nightlyUsd;
+
+      return scoreB - scoreA;
+    });
+
+  if (matchingHotels.length > 0) return matchingHotels[0];
+
+  const fallback = hotelsData
+    .filter((hotel) => hotel.country === country && hotel.city === city)
+    .sort((a, b) => a.nightlyUsd - b.nightlyUsd);
+
+  return fallback[0] || null;
+}
+
+function buildDailyPlan(attractions, days) {
+  const result = [];
+  const slots = ["בוקר", "צהריים", "ערב"];
+
+  for (let day = 0; day < days; day++) {
+    const dayItems = [];
+    const slotMap = {};
+
+    for (let j = 0; j < 3; j++) {
+      const attraction = attractions[(day * 3 + j) % attractions.length];
+      if (!dayItems.find((item) => item.id === attraction.id)) {
+        dayItems.push(attraction);
+        slotMap[attraction.id] = slots[j];
+      }
+    }
+
+    result.push({
+      dayNumber: day + 1,
+      items: dayItems,
+      slotMap
+    });
+  }
+
+  return result;
+}
+
+function estimateFlightCost(country, peopleCount) {
+  const place = placesData.find((p) => p.country === country);
+  const perPerson = place ? place.estimatedFlightUsd : 700;
+  return perPerson * peopleCount;
+}
+
+function buildVacationPlan() {
+  const country = tripCountrySelect.value;
+  const city = tripCitySelect.value;
   const budget = Number(tripBudget.value || 0);
   const days = Number(tripDays.value || 0);
-  const chosenStyle = tripCustomStyle.value.trim() || tripStyle.value || selectedStyle || customStyle;
-  const hotelLevel = tripHotelLevel.value || "4 כוכבים";
+  const style = tripCustomStyle.value.trim() || tripStyle.value || "";
+  const hotelLevel = tripHotelLevel.value || "";
+  const peopleCount = 4;
 
-  if (!selectedCountry || !selectedCity) {
-    premiumOutput.textContent = "בחר קודם מדינה ועיר.";
+  if (!country || !city) {
+    premiumOutput.innerHTML = "בחר מדינה ועיר.";
     return;
   }
 
   if (!budget || !days) {
-    premiumOutput.textContent = "הכנס תקציב ומספר ימים.";
+    premiumOutput.innerHTML = "הכנס תקציב ומספר ימים.";
     return;
   }
 
-  const matchingPlaces = placesData
+  const flightBudget = Math.round(budget * 0.35);
+  const hotelBudget = Math.round(budget * 0.40);
+  const activitiesBudget = Math.round(budget * 0.25);
+
+  const estimatedFlight = estimateFlightCost(country, peopleCount);
+
+  const cityAttractions = placesData
+    .filter((place) => place.country === country && place.city === city)
     .filter((place) => {
-      const baseMatch = place.country === selectedCountry && place.city === selectedCity;
-      if (!baseMatch) return false;
-
-      if (!chosenStyle) return true;
-
+      if (!style) return true;
       return (
-        place.styles.some((style) => includesNormalized(style, chosenStyle)) ||
-        includesNormalized(place.descriptionHe, chosenStyle)
+        place.styles.includes(style) ||
+        includesNormalized(place.descriptionHe, style) ||
+        includesNormalized(place.nameHe, style)
       );
-    })
-    .sort((a, b) => b.interestScore - a.interestScore)
-    .slice(0, 5);
-
-  if (!matchingPlaces.length) {
-    premiumOutput.textContent = "לא נמצאו מספיק מקומות מתאימים לתוכנית.";
-    return;
-  }
-
-  premiumOutput.textContent =
-    `תוכנית פרימיום לדוגמה: ${days} ימים ב${selectedCity}, ${selectedCountry}. ` +
-    `סגנון: ${chosenStyle || "כללי"}. ` +
-    `מלון מומלץ: ${tripHotelLevel.value || hotelLevel}. ` +
-    `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
-    `תקציב כולל: $${budget}.`;
-}
-
-function parseTripPrompt(text) {
-  const lower = normalizeText(text);
-
-  let days = 3;
-  const dayMatch = lower.match(/\d+/);
-  if (dayMatch) days = parseInt(dayMatch[0], 10);
-
-  let style = "כללי";
-  if (lower.includes("משפחה") || lower.includes("ילדים")) style = "משפחתי";
-  if (lower.includes("רומנט")) style = "רומנטי";
-  if (lower.includes("אוכל")) style = "אוכל";
-  if (lower.includes("הרפת")) style = "הרפתקאות";
-  if (lower.includes("קניות")) style = "קניות";
-  if (lower.includes("שקט")) style = "שקט";
-
-  let city = "פריז";
-
-  Object.entries(countryCities).forEach(([country, cities]) => {
-    cities.forEach((candidate) => {
-      if (includesNormalized(candidate, lower)) city = candidate;
-    });
-  });
-
-  return { city, days, style };
-}
-
-function generateTripPlan() {
-  const text = tripPrompt.value.trim();
-  if (!text) {
-    tripResult.innerHTML = "כתוב בקשה לתכנון טיול";
-    return;
-  }
-
-  const { city, days, style } = parseTripPrompt(text);
-
-  const places = placesData
-    .filter((place) => place.city === city)
-    .filter((place) => {
-      if (style === "כללי") return true;
-      if (style === "משפחתי") return place.styles.includes("משפחה");
-      if (style === "רומנטי") return place.styles.includes("רומנטי");
-      if (style === "אוכל") return place.styles.includes("אוכל") || place.styles.includes("בתי קפה");
-      if (style === "קניות") return place.styles.includes("קניות") || place.styles.includes("קניונים");
-      if (style === "שקט") return place.styles.includes("שקט");
-      if (style === "הרפתקאות") return place.styles.includes("הרפתקאות") || place.styles.includes("טיול רגלי");
-      return true;
     })
     .sort((a, b) => b.interestScore - a.interestScore);
 
-  let html = `<h3>מסלול ${days} ימים ב${city}</h3>`;
+  const usableAttractions = cityAttractions.length
+    ? cityAttractions
+    : placesData
+        .filter((place) => place.country === country && place.city === city)
+        .sort((a, b) => b.interestScore - a.interestScore);
 
-  if (!places.length) {
-    html += `כרגע אין מספיק מקומות מוכנים במערכת עבור ${city}, אבל העיר זוהתה.`;
-    tripResult.innerHTML = html;
+  if (!usableAttractions.length) {
+    premiumOutput.innerHTML = `אין עדיין מספיק אטרקציות מוכנות במערכת עבור ${city}.`;
     return;
   }
 
-  for (let i = 1; i <= days; i++) {
-    const morning = places[(i - 1) % places.length];
-    const afternoon = places[i % places.length];
-    const evening = places[(i + 1) % places.length];
+  const hotel = chooseHotel(country, city, style, hotelLevel, hotelBudget, days);
 
-    html += `
-      <div class="trip-day">
-        <b>יום ${i}</b><br>
-        בוקר – ${escapeHtml(morning.nameHe)}<br>
-        צהריים – אזור ${escapeHtml(afternoon.neighborhood || afternoon.city)}<br>
-        אחר הצהריים – ${escapeHtml(afternoon.nameHe)}<br>
-        ערב – ${escapeHtml(evening.nameHe)} בסגנון ${escapeHtml(style)}
-      </div>
-    `;
+  if (!hotel) {
+    premiumOutput.innerHTML = `אין עדיין מלון מוכן במערכת עבור ${city}.`;
+    return;
   }
 
-  html += `
-    <b>סגנון טיול:</b> ${escapeHtml(style)}<br>
-    <b>העיר שנבחרה:</b> ${escapeHtml(city)}<br>
-    <b>טיפ:</b> בחר גם מקום במפה ואז צור מסלול הליכה.
+  const dailyPlan = buildDailyPlan(usableAttractions, days);
+
+  const attractionsTotalCost = dailyPlan
+    .flatMap((day) => day.items)
+    .reduce((sum, item) => sum + (item.estimatedCostUsd || 0), 0);
+
+  const hotelTotalCost = hotel.nightlyUsd * days;
+  const totalEstimated = estimatedFlight + hotelTotalCost + attractionsTotalCost;
+
+  selectedCountry = country;
+  selectedCity = city;
+  countrySelect.value = country;
+  populateCities(country);
+  citySelect.value = city;
+  searchTerm = "";
+  renderAll();
+
+  drawVacationPlanOnMap(hotel, dailyPlan);
+
+  let html = `
+    <div class="trip-plan-block">
+      <strong>יעד:</strong> ${escapeHtml(city)}, ${escapeHtml(country)}<br>
+      <strong>מספר ימים:</strong> ${days}<br>
+      <strong>סגנון:</strong> ${escapeHtml(style || "כללי")}<br>
+      <strong>מלון שנבחר:</strong> ${escapeHtml(hotel.nameHe)} (${escapeHtml(hotel.level)})<br>
+      <strong>עלות מלון משוערת:</strong> $${hotelTotalCost}<br>
+      <strong>עלות טיסה משוערת למשפחה:</strong> $${estimatedFlight}<br>
+      <strong>עלות אטרקציות משוערת:</strong> $${attractionsTotalCost}<br>
+      <strong>תקציב כולל:</strong> $${budget}<br>
+      <strong>סה"כ משוער:</strong> $${totalEstimated}<br>
+      <strong>התאמה לתקציב:</strong> ${totalEstimated <= budget ? "כן" : "גבוה מהתקציב"}
+    </div>
   `;
 
-  tripResult.innerHTML = html;
-}
-
-async function searchHotels() {
-  const city = hotelCityInput.value.trim();
-
-  if (!city) {
-    hotelResults.innerHTML = "כתוב עיר";
-    return;
-  }
-
-  const now = Date.now();
-  const diff = now - lastHotelSearchAt;
-  if (diff < 1200) {
-    hotelResults.innerHTML = "המתן רגע ונסה שוב.";
-    return;
-  }
-  lastHotelSearchAt = now;
-
-  hotelResults.innerHTML = "מחפש מלונות...";
-
-  try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&q=${encodeURIComponent("hotel " + city)}`;
-
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "application/json"
-      }
+  dailyPlan.forEach((dayGroup) => {
+    html += `<div class="trip-day-block"><strong>יום ${dayGroup.dayNumber}</strong><br>`;
+    dayGroup.items.forEach((place) => {
+      html += `${escapeHtml(dayGroup.slotMap[place.id])} – ${escapeHtml(place.nameHe)} (עלות: $${place.estimatedCostUsd || 0})<br>`;
     });
+    html += `</div>`;
+  });
 
-    const data = await response.json();
-
-    if (!Array.isArray(data) || !data.length) {
-      hotelResults.innerHTML = "לא נמצאו מלונות";
-      return;
-    }
-
-    hotelResults.innerHTML = "";
-
-    data.forEach((hotel) => {
-      const title = (hotel.display_name || "").split(",")[0] || "מלון";
-      const mapUrl = `https://www.openstreetmap.org/?mlat=${hotel.lat}&mlon=${hotel.lon}#map=17/${hotel.lat}/${hotel.lon}`;
-
-      const div = document.createElement("div");
-      div.className = "hotel-item";
-      div.innerHTML = `
-        <b>${escapeHtml(title)}</b><br>
-        ${escapeHtml(hotel.display_name || "")}<br>
-        <a class="hotel-map-link" href="${mapUrl}" target="_blank" rel="noopener noreferrer">פתח במפה</a>
-      `;
-
-      hotelResults.appendChild(div);
-    });
-
-    const attr = document.createElement("div");
-    attr.className = "hotel-item";
-    attr.innerHTML = 'נתוני מפה ומלונות: OpenStreetMap / Nominatim';
-    hotelResults.appendChild(attr);
-  } catch (error) {
-    hotelResults.innerHTML = "שגיאה בחיפוש";
-  }
+  premiumOutput.innerHTML = html;
 }
 
 function resetAll() {
@@ -1112,11 +1131,18 @@ function resetAll() {
   neighborhoodInput.value = "";
   homeAddressInput.value = "";
   viaAddressInput.value = "";
+
+  tripCountrySelect.value = "";
+  tripCitySelect.innerHTML = '<option value="">בחר עיר</option>';
+  tripCitySelect.disabled = true;
+  tripBudget.value = "";
+  tripDays.value = "";
+  tripStyle.value = "";
+  tripCustomStyle.value = "";
+  tripHotelLevel.value = "";
+
   searchInput.value = "";
-  tripPrompt.value = "";
-  tripResult.innerHTML = "";
-  hotelCityInput.value = "";
-  hotelResults.innerHTML = "";
+  premiumOutput.innerHTML = "עדיין לא נבנתה תוכנית.";
 
   closeOverlay();
   clearRoute();
@@ -1145,6 +1171,10 @@ citySelect.addEventListener("change", (event) => {
   renderAll();
 });
 
+tripCountrySelect.addEventListener("change", (event) => {
+  populateTripCities(event.target.value);
+});
+
 styleSelect.addEventListener("change", (event) => {
   selectedStyle = event.target.value;
   renderAll();
@@ -1158,9 +1188,7 @@ customStyleInput.addEventListener("input", (event) => {
 searchBtn.addEventListener("click", runSearch);
 filterSearchBtn.addEventListener("click", runFilterSearch);
 walkRouteBtn.addEventListener("click", createWalkingRoute);
-premiumPlanBtn.addEventListener("click", buildPremiumPlan);
-tripGenerateBtn.addEventListener("click", generateTripPlan);
-hotelSearchBtn.addEventListener("click", searchHotels);
+premiumPlanBtn.addEventListener("click", buildVacationPlan);
 
 searchInput.addEventListener("input", (event) => {
   renderSuggestions(event.target.value.trim());
@@ -1168,10 +1196,6 @@ searchInput.addEventListener("input", (event) => {
 
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") runSearch();
-});
-
-hotelCityInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") searchHotels();
 });
 
 document.addEventListener("click", (event) => {
