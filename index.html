@@ -19,7 +19,7 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות, מסלולים, מלונות ותכנון טיולים חכם</p>
+        <p>גלו מקומות, מסלולים ותכנון חופשה חכם</p>
       </div>
 
       <div class="card search-card">
@@ -91,13 +91,23 @@
       </div>
 
       <div class="card premium-card">
-        <h2>Premium - תכנון חופשה</h2>
+        <h2>בניית חופשה</h2>
 
-        <label for="tripBudget">תקציב בדולר</label>
-        <input id="tripBudget" type="number" placeholder="למשל 1500" />
+        <label for="tripCountrySelect">מדינת יעד</label>
+        <select id="tripCountrySelect">
+          <option value="">בחר מדינה</option>
+        </select>
+
+        <label for="tripCitySelect">עיר יעד</label>
+        <select id="tripCitySelect" disabled>
+          <option value="">בחר עיר</option>
+        </select>
+
+        <label for="tripBudget">תקציב כולל בדולר</label>
+        <input id="tripBudget" type="number" placeholder="למשל 2500" />
 
         <label for="tripDays">מספר ימים</label>
-        <input id="tripDays" type="number" placeholder="למשל 5" />
+        <input id="tripDays" type="number" placeholder="למשל 4" />
 
         <label for="tripStyle">סגנון חופשה</label>
         <select id="tripStyle">
@@ -105,7 +115,7 @@
         </select>
 
         <label for="tripCustomStyle">סגנון אישי</label>
-        <input id="tripCustomStyle" type="text" placeholder="למשל רגוע, רומנטי, אוכל טוב..." />
+        <input id="tripCustomStyle" type="text" placeholder="למשל משפחתי, רגוע, אוכל..." />
 
         <label for="tripHotelLevel">רמת מלון</label>
         <select id="tripHotelLevel">
@@ -118,30 +128,7 @@
         </select>
 
         <button id="premiumPlanBtn" class="premium-btn">בנה לי חופשה</button>
-        <p id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</p>
-      </div>
-
-      <div class="card trip-ai-card">
-        <h2>תכנון טיול חכם</h2>
-        <textarea
-          id="tripPrompt"
-          placeholder="לדוגמה:
-טיול משפחתי לפריז
-חופשה רומנטית ברומא
-טיול אוכל בטוקיו ל-6 ימים
-טיול עם ילדים בלונדון"
-        ></textarea>
-        <button id="tripGenerateBtn" class="primary-btn">צור מסלול טיול</button>
-        <div id="tripResult"></div>
-      </div>
-
-      <div class="card hotel-card">
-        <h2>חיפוש מלונות מהאינטרנט</h2>
-        <label for="hotelCityInput">עיר</label>
-        <input id="hotelCityInput" type="text" placeholder="למשל Paris / פריז / Tokyo" />
-        <button id="hotelSearchBtn" class="primary-btn">חפש מלונות</button>
-        <div id="hotelResults"></div>
-        <p class="hotel-note">תוצאות המלונות מגיעות מ-OpenStreetMap ודורשות אינטרנט.</p>
+        <div id="premiumOutput" class="premium-output">עדיין לא נבנתה תוכנית.</div>
       </div>
 
       <div class="card">
