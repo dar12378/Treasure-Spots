@@ -19,7 +19,7 @@
     <aside class="sidebar">
       <div class="brand-block">
         <h1>Treasure Spots</h1>
-        <p>גלו מקומות, מסלולים ותכנון טיולים חכם</p>
+        <p>גלו מקומות, מסלולים, מלונות ותכנון טיולים חכם</p>
       </div>
 
       <div class="card search-card">
@@ -133,6 +133,15 @@
         ></textarea>
         <button id="tripGenerateBtn" class="primary-btn">צור מסלול טיול</button>
         <div id="tripResult"></div>
+      </div>
+
+      <div class="card hotel-card">
+        <h2>חיפוש מלונות מהאינטרנט</h2>
+        <label for="hotelCityInput">עיר</label>
+        <input id="hotelCityInput" type="text" placeholder="למשל Paris / פריז / Tokyo" />
+        <button id="hotelSearchBtn" class="primary-btn">חפש מלונות</button>
+        <div id="hotelResults"></div>
+        <p class="hotel-note">תוצאות המלונות מגיעות מ-OpenStreetMap ודורשות אינטרנט.</p>
       </div>
 
       <div class="card">
