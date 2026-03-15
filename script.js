@@ -46,6 +46,10 @@ const tripPrompt = document.getElementById("tripPrompt");
 const tripGenerateBtn = document.getElementById("tripGenerateBtn");
 const tripResult = document.getElementById("tripResult");
 
+const hotelCityInput = document.getElementById("hotelCityInput");
+const hotelSearchBtn = document.getElementById("hotelSearchBtn");
+const hotelResults = document.getElementById("hotelResults");
+
 let selectedCountry = "";
 let selectedCity = "";
 let selectedStyle = "";
@@ -62,6 +66,7 @@ let mapMarkers = [];
 let routeLine = null;
 let startMarker = null;
 let viaMarker = null;
+let lastHotelSearchAt = 0;
 
 function normalizeText(text) {
   return String(text || "")
@@ -939,7 +944,7 @@ function buildPremiumPlan() {
   premiumOutput.textContent =
     `תוכנית פרימיום לדוגמה: ${days} ימים ב${selectedCity}, ${selectedCountry}. ` +
     `סגנון: ${chosenStyle || "כללי"}. ` +
-    `מלון מומלץ: ${hotelLevel}. ` +
+    `מלון מומלץ: ${tripHotelLevel.value || hotelLevel}. ` +
     `מקומות מומלצים: ${matchingPlaces.map((place) => place.nameHe).join(", ")}. ` +
     `תקציב כולל: $${budget}.`;
 }
@@ -1026,6 +1031,66 @@ function generateTripPlan() {
   tripResult.innerHTML = html;
 }
 
+async function searchHotels() {
+  const city = hotelCityInput.value.trim();
+
+  if (!city) {
+    hotelResults.innerHTML = "כתוב עיר";
+    return;
+  }
+
+  const now = Date.now();
+  const diff = now - lastHotelSearchAt;
+  if (diff < 1200) {
+    hotelResults.innerHTML = "המתן רגע ונסה שוב.";
+    return;
+  }
+  lastHotelSearchAt = now;
+
+  hotelResults.innerHTML = "מחפש מלונות...";
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&q=${encodeURIComponent("hotel " + city)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+
+    const data = await response.json();
+
+    if (!Array.isArray(data) || !data.length) {
+      hotelResults.innerHTML = "לא נמצאו מלונות";
+      return;
+    }
+
+    hotelResults.innerHTML = "";
+
+    data.forEach((hotel) => {
+      const title = (hotel.display_name || "").split(",")[0] || "מלון";
+      const mapUrl = `https://www.openstreetmap.org/?mlat=${hotel.lat}&mlon=${hotel.lon}#map=17/${hotel.lat}/${hotel.lon}`;
+
+      const div = document.createElement("div");
+      div.className = "hotel-item";
+      div.innerHTML = `
+        <b>${escapeHtml(title)}</b><br>
+        ${escapeHtml(hotel.display_name || "")}<br>
+        <a class="hotel-map-link" href="${mapUrl}" target="_blank" rel="noopener noreferrer">פתח במפה</a>
+      `;
+
+      hotelResults.appendChild(div);
+    });
+
+    const attr = document.createElement("div");
+    attr.className = "hotel-item";
+    attr.innerHTML = 'נתוני מפה ומלונות: OpenStreetMap / Nominatim';
+    hotelResults.appendChild(attr);
+  } catch (error) {
+    hotelResults.innerHTML = "שגיאה בחיפוש";
+  }
+}
+
 function resetAll() {
   selectedCountry = "";
   selectedCity = "";
@@ -1050,6 +1115,8 @@ function resetAll() {
   searchInput.value = "";
   tripPrompt.value = "";
   tripResult.innerHTML = "";
+  hotelCityInput.value = "";
+  hotelResults.innerHTML = "";
 
   closeOverlay();
   clearRoute();
@@ -1093,6 +1160,7 @@ filterSearchBtn.addEventListener("click", runFilterSearch);
 walkRouteBtn.addEventListener("click", createWalkingRoute);
 premiumPlanBtn.addEventListener("click", buildPremiumPlan);
 tripGenerateBtn.addEventListener("click", generateTripPlan);
+hotelSearchBtn.addEventListener("click", searchHotels);
 
 searchInput.addEventListener("input", (event) => {
   renderSuggestions(event.target.value.trim());
@@ -1100,6 +1168,10 @@ searchInput.addEventListener("input", (event) => {
 
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") runSearch();
+});
+
+hotelCityInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") searchHotels();
 });
 
 document.addEventListener("click", (event) => {
