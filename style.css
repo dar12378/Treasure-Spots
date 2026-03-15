@@ -65,8 +65,7 @@ body {
   z-index: 10000;
 }
 
-.route-help,
-.hotel-note {
+.route-help {
   color: #9ca3af;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -330,12 +329,6 @@ button {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  transition: 0.2s;
-}
-
-.source-btn:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
 }
 
 .empty-message,
@@ -343,47 +336,25 @@ button {
   margin-top: 10px;
   color: #9ca3af;
   font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-#tripResult {
-  margin-top: 14px;
   line-height: 1.7;
-  font-size: 14px;
-  color: #e5e7eb;
 }
 
-.trip-day {
+.trip-plan-block {
   background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   padding: 12px;
+  margin-top: 10px;
+}
+
+.trip-day-block {
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
-  margin-bottom: 10px;
-}
-
-#hotelResults {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.hotel-item {
-  background: rgba(255, 255, 255, 0.05);
   padding: 10px;
-  border-radius: 10px;
-  font-size: 14px;
-  line-height: 1.6;
+  margin-top: 8px;
 }
 
-.hotel-item b {
-  color: #7dd3fc;
-}
-
-.hotel-map-link {
-  display: inline-block;
-  margin-top: 6px;
+.trip-day-block strong {
   color: #93c5fd;
-  text-decoration: none;
 }
 
 .viewer-area {
