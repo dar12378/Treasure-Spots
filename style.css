@@ -65,7 +65,8 @@ body {
   z-index: 10000;
 }
 
-.route-help {
+.route-help,
+.hotel-note {
   color: #9ca3af;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -357,6 +358,32 @@ button {
   padding: 12px;
   border-radius: 10px;
   margin-bottom: 10px;
+}
+
+#hotelResults {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hotel-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.hotel-item b {
+  color: #7dd3fc;
+}
+
+.hotel-map-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: #93c5fd;
+  text-decoration: none;
 }
 
 .viewer-area {
